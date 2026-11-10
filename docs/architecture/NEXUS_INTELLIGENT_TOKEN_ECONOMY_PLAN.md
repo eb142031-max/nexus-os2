@@ -42,14 +42,16 @@ The registry is a catalogue and integration contract, not evidence that source m
 
 ## 3. Repository and environment inspection
 
-Initial inspection found:
-- The nexus-os2 repository currently has a minimal README describing a multi-tool Python operating system with Omega Hydra orchestration.
-- Its default branch is main; the planning branch is docs/nexus-token-economy-plan.
-- The connected Supabase project is shadow-eye-argus (project ref puiaslzebzcuqmifmtqs) and is currently **INACTIVE**.
-- Supabase schema, migrations, RLS policies, and functions could not be inspected because the database endpoint reported that it was not accessible.
-- No schema changes or project restoration were performed.
+The M0 inspection is recorded in [META OS Federation — Repository Inventory and M0 Baseline](./FEDERATION_REPOSITORY_INVENTORY_M0.md). Key findings:
+- `nexus-os2` has a minimal README and is currently a planning host; its role as canonical runtime is unverified.
+- `shadowhandmonastery` contains a Shadow Command charter, architecture plan, Sprint 1 specification and canonical TypeScript core types. Its README explicitly says the application, migrations, authentication and Aegir runtime are not implemented in that repository.
+- The Hydra ecosystem repository contains a Guardian OS architecture and an isolated deterministic G5A synthetic fixture with tests. The fixture is not a production LMS, authenticated service or validated pilot; Guardian remains separate from its game prototype.
+- The public ARGUS repository README only identifies it as investigation software; its code/data architecture is not yet verified.
+- `super-funicular` is a blank Codespaces Next.js starter, not a verified federation runtime.
+- The connected Supabase project `shadow-eye-argus` (ref `puiaslzebzcuqmifmtqs`) is **INACTIVE**. Schema, migrations and RLS could not be inspected.
+- No schema changes, project restoration, production deployment or runtime adapter work was performed.
 
-**Important:** The proposed schema below is a target design, not a description of existing deployed tables. Reconcile it against the actual repository and database before implementation.
+**M0 status:** Partial. Repository-level architecture evidence is now stronger, but canonical runtime selection, exhaustive repository trees, the full Shadow product inventory, ARGUS schema, and source-ingestion status remain open. The proposed schema below is a target design, not a description of existing deployed tables. Reconcile it against actual repositories and database before implementation.
 
 ## 4. Target architecture
 
