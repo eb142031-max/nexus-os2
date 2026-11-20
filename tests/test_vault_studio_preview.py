@@ -25,7 +25,8 @@ class VaultStudioPreviewTests(unittest.TestCase):
         self.assertIn("disabled in P0 preview", self.source)
 
     def test_no_external_script_or_stylesheet_dependencies(self):
-        self.assertNotIn("<script src=", self.source)
+        self.assertNotIn('<script src="http', self.source)
+        self.assertIn('<script src="./registry.js"></script>', self.source)
         self.assertNotIn('<link rel="stylesheet"', self.source)
 
     def test_mobile_layout_is_present(self):
