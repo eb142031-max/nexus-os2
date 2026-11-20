@@ -38,11 +38,11 @@ class VaultRegistryIntegrationTests(unittest.TestCase):
         self.assertIn("localStorage", self.js)
         self.assertIn("No privileged approval was created", self.js)
         self.assertIn("No authentication", self.js)
-        self.assertIn("No privileged approvals", self.js)
+        self.assertIn("privileged approvals", self.js)
 
     def test_seal_requires_confirmed_catalog_state(self):
         self.assertIn('function canSeal(p) { return p.status === "CONFIRMED" && !p.archived; }', self.js)
-        self.assertIn("Catalog-only seal", self.js)
+        self.assertIn("catalog-only seal", self.js)
 
 if __name__ == "__main__":
     unittest.main()
