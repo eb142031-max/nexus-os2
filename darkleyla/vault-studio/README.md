@@ -4,11 +4,12 @@ A standalone, dependency-free development UI prototype for the Dark Leyla creati
 
 ## Integrated registry capabilities
 
-- Persona Forge registry with browser-local profile creation, search, status filters, skill/tag metadata, and revision history.
+- Persona Forge registry with browser-local profile creation, search, status filters, reusable skill assignments, tags, and version history.
+- Skill Forge catalog for reusable skill definitions and categories.
 - Local catalog review states and a catalog-only seal workflow. These states are not identity, rights, consent, production, or publication approvals.
-- Asset Vault metadata records linked to persona profiles, with asset type, revision, source URL, and catalog classification.
+- Asset Vault records linked to persona profiles, with asset type, revision, source URL, catalog classification, and optional small local image records/gallery previews.
 - Browser-local activity ledger for profile, review, asset, and backup actions.
-- JSON backup export and import, plus a local demo reset control.
+- Schema-checked JSON backup export/import compatible with the source registry's profile, skill, asset, image, and version records, plus a local demo reset control.
 - Persistent browser-local storage with an explicit demo-data disclosure.
 
 ## Preview scope
@@ -19,7 +20,7 @@ A standalone, dependency-free development UI prototype for the Dark Leyla creati
 
 ## Explicit limitations
 
-This remains a front-end prototype. Registry records are stored in the current browser only. There is no real authentication, shared database, server-side authorization, durable server audit ledger, encrypted asset storage, file upload, model-provider connection, image/video generation, or publishing integration. Local activity history and catalog sealing are not tamper-resistant and do not grant privileged approvals. Sample project/queue telemetry remains illustrative.
+This remains a front-end prototype. Registry records are stored in the current browser only. There is no real authentication, shared database, server-side authorization, durable server audit ledger, encrypted remote asset storage, shared file upload, model-provider connection, image/video generation, or publishing integration. Local activity history and catalog sealing are not tamper-resistant and do not grant privileged approvals. Sample project/queue telemetry remains illustrative.
 
 The existing Python HALL 5 module is a fail-closed reference gate only. Its Boolean age/rights/consent inputs are not evidence of real identity, age, ownership, rights, or consent.
 
