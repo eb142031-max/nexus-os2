@@ -16,8 +16,14 @@ class VaultRegistryIntegrationTests(unittest.TestCase):
             self.assertIn(token, self.html)
 
     def test_asset_registry_and_backup_controls_exist(self):
-        for token in ("assetRegistryList", "assetSave", "backupExport", "backupImport"):
+        for token in ("assetRegistryList", "assetSave", "assetImage", "backupExport", "backupImport"):
             self.assertIn(token, self.html)
+
+    def test_skill_forge_exists(self):
+        self.assertIn('id="view-skills"', self.html)
+        self.assertIn("skillRegistryList", self.html)
+        self.assertIn("skillSave", self.html)
+        self.assertIn("versions", self.js)
 
     def test_activity_ledger_exists(self):
         self.assertIn('id="view-ledger"', self.html)
