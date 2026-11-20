@@ -4,7 +4,7 @@
  */
 (() => {
   "use strict";
-  const KEY = "dark-leyla-vault-registry:v1";
+  const KEY = "dark-leyla-vault-registry:v2";
   const $ = id => document.getElementById(id);
   const now = () => new Date().toISOString();
   const uid = prefix => prefix + "_" + Date.now().toString(36) + Math.random().toString(36).slice(2, 7);
@@ -22,11 +22,11 @@
     for (const p of v.profiles) {
       if (typeof p.name !== "string" || !p.name.trim() || !STATUSES.includes(p.status) ||
           !Array.isArray(p.skills) || !Array.isArray(p.tags) || !Array.isArray(p.notes) ||
-          !Array.isArray(p.images) || !Array.isArray(p.revisions)) return false;
+          !Array.isArray(p.images) || !Array.isArray(p.revisions || p.versions)) return false;
       if (p.skills.some(id => !skillIds.has(id))) return false;
       if (p.catalogFlag !== catalogFlagFor(p.status)) return false;
       if (p.images.some(i => typeof i.id !== "string" || typeof i.src !== "string" ||
-          !(i.src.startsWith("data:image/") || /^https:\/\//i.test(i.src)))) return false;
+          !(i.src.startsWith("data:image/") || /^https?:\/\//i.test(i.src)))) return false;
     }
     for (const a of v.assets) {
       if (!profileIds.has(a.profileId) || !["VAULT","PUBLIC_DERIVATIVE"].includes(a.visibility)) return false;
@@ -110,6 +110,7 @@
       const profile = {id,...data,faction:"",persona:name,lane:"VAULT",gate:"UNVERIFIED",status:"TAGGED",
         catalogFlag:catalogFlagFor("TAGGED"),archived:false,demo:true,notes:[],images:[],
         revisions:[{id:uid("rev"),label:"v1",summary:"Registry profile created",at:stamp}],
+        versions:[{id:uid("rev"),label:"v1",summary:"Registry profile created",at:stamp}],
         createdAt:stamp,updatedAt:stamp};
       next.profiles.unshift(profile);
       activeProfileId = id;
@@ -120,7 +121,7 @@
       JSON.stringify(p.skills)!==JSON.stringify(data.skills) || JSON.stringify(p.tags)!==JSON.stringify(data.tags);
     if (!changed) return toast("No profile changes to save.");
     Object.assign(p,data,{updatedAt:now(),persona:name});
-    p.revisions.unshift({id:uid("rev"),label:"v"+(p.revisions.length+1),summary:"Profile metadata revised",at:p.updatedAt});
+    p.revisions.unshift({id:uid("rev"),label:"v"+(p.revisions.length+1),summary:"Profile metadata revised",at:p.updatedAt});p.versions=p.revisions;
     if (record(next,"PROFILE_REVISED","Persona revised: "+name,p.id)) toast("New profile revision saved locally.");
   }
   function renderProfiles() {
@@ -171,7 +172,7 @@
     if(!canSeal(p))return toast("Only CONFIRMED, non-archived profiles can receive a catalog seal.");
     if(!confirm("Apply a catalog-only seal? This does not authorize production, publication, rights, identity, or consent."))return;
     p.status="SEALED";p.catalogFlag=catalogFlagFor("SEALED");p.updatedAt=now();
-    p.revisions.unshift({id:uid("rev"),label:"v"+(p.revisions.length+1),summary:"Catalog seal applied (non-authoritative)",at:p.updatedAt});
+    p.revisions.unshift({id:uid("rev"),label:"v"+(p.revisions.length+1),summary:"Catalog seal applied (non-authoritative)",at:p.updatedAt});p.versions=p.revisions;
     if(record(load(),"CATALOG_SEALED","Catalog-only seal applied: "+p.name,p.id))
       toast("Catalog seal recorded. No production permission was granted.");
   }
@@ -263,6 +264,8 @@
     reader.onload=()=>{
       try{
         const parsed=JSON.parse(String(reader.result||""));
+        if(!parsed||parsed.schema!==1||!Array.isArray(parsed.profiles)||!Array.isArray(parsed.skills)||!Array.isArray(parsed.assets)||!Array.isArray(parsed.activity))throw new Error("Backup schema is not supported.");
+        parsed.profiles=parsed.profiles.map(p=>({...p,identity:p.identity||"",notesText:p.notesText||p.notes?.[0]?.text||"",revisions:p.revisions||p.versions||[],versions:p.versions||p.revisions||[]}));
         if(!validState(parsed))throw new Error("Backup failed schema, reference, or status validation.");
         state=parsed;activeProfileId=null;
         if(record(state,"BACKUP_IMPORTED","JSON backup imported into local demo storage."))toast("Backup imported to this browser only.");
