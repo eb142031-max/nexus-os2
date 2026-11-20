@@ -89,7 +89,7 @@
     const name = $("personaName").value.trim();
     if (!name) return toast("A display name is required.");
     const skillNames = $("personaSkills").value.split(",").map(x => x.trim()).filter(Boolean);
-    const next = load();
+    const next = JSON.parse(JSON.stringify(load()));
     const skillIds = skillNames.map(name => {
       let found = next.skills.find(s => s.name.toLowerCase() === name.toLowerCase());
       if (!found) {
@@ -154,7 +154,8 @@
     if(!p)target.append(el("p","micro","Select a persona to inspect its revisions."));
   }
   function reviewProfile() {
-    const p=load().profiles.find(x=>x.id===activeProfileId);
+    const next=JSON.parse(JSON.stringify(load()));
+    const p=next.profiles.find(x=>x.id===activeProfileId);
     if(!p)return toast("Select or save a persona first.");
     const status=$("personaStatus").value, note=$("personaReviewNote").value.trim();
     if(status==="SEALED")return toast("Use the separate catalog seal action after local confirmation.");
@@ -163,22 +164,23 @@
     p.status=status;p.catalogFlag=catalogFlagFor(status);p.archived=status==="ARCHIVED";p.updatedAt=now();
     p.notes.unshift({id:uid("note"),text:"[Local review → "+status+"] "+note,at:p.updatedAt});
     $("personaReviewNote").value="";
-    if(record(load(),"CATALOG_REVIEW","Local catalog status set to "+status+": "+p.name,p.id))
+    if(record(next,"CATALOG_REVIEW","Local catalog status set to "+status+": "+p.name,p.id))
       toast("Catalog status updated locally. No privileged approval was created.");
   }
   function sealProfile() {
-    const p=load().profiles.find(x=>x.id===activeProfileId);
+    const next=JSON.parse(JSON.stringify(load()));
+    const p=next.profiles.find(x=>x.id===activeProfileId);
     if(!p)return toast("Select a persona first.");
     if(!canSeal(p))return toast("Only CONFIRMED, non-archived profiles can receive a catalog seal.");
     if(!confirm("Apply a catalog-only seal? This does not authorize production, publication, rights, identity, or consent."))return;
     p.status="SEALED";p.catalogFlag=catalogFlagFor("SEALED");p.updatedAt=now();
     p.revisions.unshift({id:uid("rev"),label:"v"+(p.revisions.length+1),summary:"Catalog seal applied (non-authoritative)",at:p.updatedAt});p.versions=p.revisions;
-    if(record(load(),"CATALOG_SEALED","Catalog-only seal applied: "+p.name,p.id))
+    if(record(next,"CATALOG_SEALED","Catalog-only seal applied: "+p.name,p.id))
       toast("Catalog seal recorded. No production permission was granted.");
   }
   function addSkill() {
     const name=$("skillName").value.trim(); if(!name)return toast("Skill name is required.");
-    const next=load();
+    const next=JSON.parse(JSON.stringify(load()));
     if(next.skills.some(s=>s.name.toLowerCase()===name.toLowerCase()))return toast("That skill already exists.");
     const skill={id:uid("skill"),name,category:$("skillCategory").value,description:$("skillDescription").value.trim()};
     next.skills.push(skill);
@@ -200,7 +202,7 @@
     if(file && (!/^image\/(png|jpeg|webp|gif)$/i.test(file.type)||file.size>1200000))
       return toast("Use a PNG, JPEG, WebP, or GIF image up to 1.2 MB.");
     const finish = imageData => {
-      const next=load(),profile=next.profiles.find(p=>p.id===profileId);
+      const next=JSON.parse(JSON.stringify(load())),profile=next.profiles.find(p=>p.id===profileId);
       if(!profile)return toast("The selected persona no longer exists.");
       let imageId;
       if(imageData){imageId=uid("image");profile.images.unshift({id:imageId,src:imageData,caption:title,kind:"upload"});}
