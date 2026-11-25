@@ -24,6 +24,7 @@ button,input,select,textarea{font:inherit}button{cursor:pointer}.shell{min-heigh
   <button data-view="tasks"><span class="ico">☷</span>Tasks & Workflows</button>
   <button data-view="audit"><span class="ico">⌁</span>Audit Ledger</button>
   <button data-view="analytics"><span class="ico">▥</span>Analytics</button>
+  <button data-view="learning"><span class="ico">⟳</span>Recursive Learning</button>
   <button data-view="settings"><span class="ico">⚙</span>Control Settings</button>
  </nav></div>
  <div class="sidefoot"><div style="color:var(--green);margin-bottom:5px">● LOCAL PILOT ONLINE</div>Browser-local demonstration storage.<br>Not production authentication or a secure evidence vault.</div>
@@ -54,6 +55,44 @@ button,input,select,textarea{font:inherit}button{cursor:pointer}.shell{min-heigh
 <section class="view" id="view-audit"><div class="notice">The browser-local ledger links each event to the previous event hash. This is a tamper-evident demonstration, not a trusted or immutable production audit service.</div><div class="panel"><div class="sectionhead"><h2>Audit chain</h2><span id="chainStatus">Checking…</span></div><div class="actions"><button class="secondary" id="verifyChain">Verify hash chain</button><button class="secondary" id="exportAudit">Export JSON</button></div><div id="auditRows" class="list" style="margin-top:14px"></div></div></section>
 <section class="view" id="view-analytics"><div class="grid stats"><div class="panel stat"><div class="label">Cases created</div><div class="value" id="aCases">0</div></div><div class="panel stat"><div class="label">Evidence references</div><div class="value" id="aEvidence">0</div></div><div class="panel stat"><div class="label">Tasks completed</div><div class="value" id="aDone">0</div></div><div class="panel stat"><div class="label">Decisions resolved</div><div class="value" id="aResolved">0</div></div></div><div class="panel"><div class="eyebrow">Operational learning loop</div><h3>Measure → Review → Improve</h3><p style="color:var(--muted);font-size:12px">Analytics are calculated from records entered into this browser. Production reporting should use server-side event records, tenant-scoped queries, and validated metric definitions.</p><div id="analyticsSummary" class="list"></div></div></section>
 <section class="view" id="view-settings"><div class="panel"><div class="eyebrow">Pilot control plane</div><h2>Identity, roles & environment</h2><p style="font-size:11px;color:var(--muted)">Select a demonstration role to preview the interface permissions. This is not a security boundary: anyone with browser access can change local state.</p><div class="field" style="max-width:300px"><label>Current demo role</label><select id="settingsRole"><option>Owner</option><option>Commander</option><option>Operator</option><option>Viewer</option></select></div><div class="sectionhead"><h2>Permission model</h2></div><div class="tablewrap"><table><thead><tr><th>Capability</th><th>Owner</th><th>Commander</th><th>Operator</th><th>Viewer</th></tr></thead><tbody><tr><td>View dashboards & records</td><td>✓</td><td>✓</td><td>✓</td><td>✓</td></tr><tr><td>Create cases, tasks, evidence refs</td><td>✓</td><td>✓</td><td>✓</td><td>—</td></tr><tr><td>Review TriCell decisions</td><td>✓</td><td>✓</td><td>Submit</td><td>—</td></tr><tr><td>Manage role policy</td><td>✓</td><td>—</td><td>—</td><td>—</td></tr><tr><td>Record final approval outcome</td><td>✓</td><td>✓</td><td>—</td><td>—</td></tr></tbody></table></div><div class="actions"><button class="danger" id="resetData">Reset local pilot data</button></div></div></section>
+<section class="view" id="view-learning">
+ <div class="grid stats">
+  <div class="panel stat"><div class="label">Learning protocol</div><div class="value">RNPL</div><div class="sub">Recursive Neural Plasticity Network</div></div>
+  <div class="panel stat"><div class="label">Output engine</div><div class="value">REA</div><div class="sub">Proprietary Version Output Engine</div></div>
+  <div class="panel stat"><div class="label">Validated cycles</div><div class="value" id="learningCount">0</div><div class="sub">Locally recorded learning runs</div></div>
+  <div class="panel stat"><div class="label">Governance</div><div class="value">HUMAN</div><div class="sub">Review before adoption or deployment</div></div>
+ </div>
+ <div class="panel">
+  <div class="eyebrow" style="color:var(--cyan)">META OS • Shared intelligence skill</div>
+  <h2>Recursive Neural Plasticity Network Learning Protocol</h2>
+  <p>Convert experience into testable improvements through a governed recursive loop. The protocol separates raw observations, proposed adaptations, validated learning and approved release.</p>
+  <div class="grid triune">
+   <div class="panel"><h3>01 • OBSERVE</h3><p>Capture the event, context, signal and intended outcome.</p></div>
+   <div class="panel"><h3>02 • EVALUATE</h3><p>Compare evidence with objectives, standards and prior versions.</p></div>
+   <div class="panel"><h3>03 • ADAPT</h3><p>Generate a bounded improvement hypothesis; preserve the prior baseline.</p></div>
+   <div class="panel"><h3>04 • REINFORCE</h3><p>Retain only changes supported by reviewable evidence.</p></div>
+   <div class="panel"><h3>05 • REASSESS</h3><p>Test the change against a fresh scenario or independent check.</p></div>
+   <div class="panel"><h3>06 • RELEASE</h3><p>REA creates a versioned output for human review and approval.</p></div>
+  </div>
+ </div>
+ <div class="grid two">
+  <div class="panel">
+   <div class="eyebrow">Learning cycle input</div><h2>Submit a learning observation</h2>
+   <div class="field"><label for="learningDomain">Domain / module</label><select id="learningDomain"><option>Imperium Governance</option><option>TriCell Nexus</option><option>DHG / Blue Wave Shark</option><option>ARGUS / Shadow Eye</option><option>Shadowhand / Black Talon</option><option>Guardian OS</option><option>Hydra Academy / Eagle Strike</option><option>Libra Guard / Field Ops</option><option>Cross-system</option></select></div>
+   <div class="field"><label for="learningObservation">Observation / experience</label><textarea id="learningObservation" rows="3" placeholder="What happened? Record the relevant facts and context."></textarea></div>
+   <div class="field"><label for="learningTarget">Intended outcome / standard</label><textarea id="learningTarget" rows="2" placeholder="What should good performance look like?"></textarea></div>
+   <div class="field"><label for="learningFeedback">Feedback / reassessment evidence</label><textarea id="learningFeedback" rows="2" placeholder="What evidence supports or challenges the proposed improvement?"></textarea></div>
+   <div class="actions"><button class="primary" id="runREA">Generate REA version output</button></div>
+  </div>
+  <div class="panel">
+   <div class="eyebrow" style="color:var(--purple)">REA • Proprietary version output engine</div><h2>Versioned learning output</h2>
+   <div id="reaOutput" class="empty">Submit an observation to generate a structured draft. No model weights are trained by this local pilot.</div>
+   <div class="actions"><button class="secondary" id="exportREA" disabled>Export latest REA output</button></div>
+  </div>
+ </div>
+ <div class="panel"><div class="sectionhead"><h2>Learning history</h2><span class="status" id="learningStatus">Awaiting first cycle</span></div><div id="learningHistory" class="empty">No learning cycles recorded.</div></div>
+ <div class="panel"><div class="eyebrow">Constitutional safeguards</div><p>REA outputs are proposals, not autonomous policy changes. Preserve source evidence, prior versions, dissent and uncertainty. A human reviewer must approve consequential changes. The local pilot stores records in this browser only; it does not perform actual neural-network weight updates or production-grade model training.</p></div>
+</section>
 <div class="footer">META OS IMPERIUM • TRIUNE MASTER PILOT • LOCAL DEMONSTRATION BUILD • v0.1</div>
 </main></div>
 <script>
@@ -71,7 +110,7 @@ const DEPTS=[
 const $=id=>document.getElementById(id);
 const storeKey="metaos-triune-pilot-v1";
 let state=load();
-function load(){try{return JSON.parse(localStorage.getItem(storeKey))||{cases:[],tasks:[],decisions:[],evidence:[],audit:[],role:"Owner"}}catch{return{cases:[],tasks:[],decisions:[],evidence:[],audit:[],role:"Owner"}}}
+function load(){try{return JSON.parse(localStorage.getItem(storeKey))||{cases:[],tasks:[],decisions:[],evidence:[],audit:[],learningRuns:[],role:"Owner"}}catch{return{cases:[],tasks:[],decisions:[],evidence:[],audit:[],learningRuns:[],role:"Owner"}}}
 function save(){localStorage.setItem(storeKey,JSON.stringify(state));render()}
 function now(){return new Date().toISOString()}
 function id(prefix){return prefix+"-"+Date.now().toString(36).toUpperCase()+"-"+Math.random().toString(36).slice(2,5).toUpperCase()}
@@ -80,14 +119,36 @@ function canReview(){return ["Owner","Commander"].includes(state.role)}
 function canAdmin(){return state.role==="Owner"}
 async function digest(s){if(crypto?.subtle){const b=await crypto.subtle.digest("SHA-256",new TextEncoder().encode(s));return [...new Uint8Array(b)].map(x=>x.toString(16).padStart(2,"0")).join("")}return "LOCAL-"+btoa(unescape(encodeURIComponent(s))).slice(0,48)}
 async function logEvent(action,detail){const prev=state.audit.at(-1)?.hash||"GENESIS";const event={id:id("AUD"),at:now(),actor:state.role,action,detail,previousHash:prev};event.hash=await digest(JSON.stringify(event));state.audit.push(event);localStorage.setItem(storeKey,JSON.stringify(state));render()}
-function nav(view){document.querySelectorAll(".view").forEach(v=>v.classList.remove("active"));$("view-"+view).classList.add("active");document.querySelectorAll("#nav button").forEach(b=>b.classList.toggle("active",b.dataset.view===view));const names={overview:"The Triune Command Center",departments:"Nine-Fold Department Registry",tricell:"TriCell Decision & Review",cases:"Cases & Evidence Registry",tasks:"Tasks & Workflow Engine",audit:"Evidence & Audit Ledger",analytics:"Reporting & Analytics",settings:"Control Settings"};$("pageTitle").textContent=names[view]||view}
+function nav(view){document.querySelectorAll(".view").forEach(v=>v.classList.remove("active"));$("view-"+view).classList.add("active");document.querySelectorAll("#nav button").forEach(b=>b.classList.toggle("active",b.dataset.view===view));const names={overview:"The Triune Command Center",departments:"Nine-Fold Department Registry",tricell:"TriCell Decision & Review",cases:"Cases & Evidence Registry",tasks:"Tasks & Workflow Engine",audit:"Evidence & Audit Ledger",analytics:"Reporting & Analytics",learning:"Recursive Learning Protocol & REA",settings:"Control Settings"};$("pageTitle").textContent=names[view]||view}
 $("nav").addEventListener("click",e=>{const b=e.target.closest("button[data-view]");if(b)nav(b.dataset.view==="tr icell"?"tricell":b.dataset.view)});
 function deptCard(d){return '<div class="panel dept" data-dept="'+d[0]+'"><div class="symbol">'+d[2]+'</div><div><h3>'+d[0]+'</h3><p>'+d[1]+'</p><span class="tag">OPEN WORKSPACE ↗</span></div></div>'}
 function bindDeptClicks(){document.querySelectorAll("[data-dept]").forEach(el=>el.onclick=()=>{const d=el.dataset.dept;alert(d+" workspace is registered in the master architecture. Its domain-specific adapter is a later integration phase.");})}
 function fillSelect(idName,empty){const s=$(idName);if(!s)return;const old=s.value;s.innerHTML='<option value="">'+empty+'</option>'+state.cases.map(c=>'<option value="'+c.id+'">'+c.id+' — '+esc(c.title)+'</option>').join("");if([...s.options].some(o=>o.value===old))s.value=old}
 function esc(s){return String(s??"").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]))}
+
+let latestREAOutput = null;
+function renderLearning(){
+ const runs=state.learningRuns||[];
+ $("learningCount").textContent=runs.length;
+ $("learningStatus").textContent=runs.length?("Latest: "+runs[runs.length-1].version):"Awaiting first cycle";
+ $("learningHistory").innerHTML=runs.length?runs.slice().reverse().map(r=>'<div class="listrow"><div><strong>'+esc(r.version)+' • '+esc(r.domain)+'</strong><small>'+esc(r.status)+' • '+new Date(r.createdAt).toLocaleString()+'</small></div><span class="status">'+esc(r.id)+'</span></div>').join(""):'<div class="empty">No learning cycles recorded.</div>';
+ if(latestREAOutput){$("reaOutput").innerHTML='<div class="chips"><span class="chip">'+esc(latestREAOutput.version)+'</span><span class="chip">DRAFT • HUMAN REVIEW</span></div><h3>Learning assessment</h3><p>'+esc(latestREAOutput.assessment)+'</p><h3>Proposed adaptation</h3><p>'+esc(latestREAOutput.adaptation)+'</p><h3>Reassessment requirement</h3><p>'+esc(latestREAOutput.reassessment)+'</p><small>Source domain: '+esc(latestREAOutput.domain)+' • '+esc(latestREAOutput.id)+'</small>';$("exportREA").disabled=false}
+}
+async function runREA(){
+ if(!canWrite())return alert("A write-enabled pilot role is required.");
+ const domain=$("learningDomain").value, observation=$("learningObservation").value.trim(), target=$("learningTarget").value.trim(), feedback=$("learningFeedback").value.trim();
+ if(!observation||!target)return alert("Enter an observation and intended outcome before generating an REA output.");
+ const prior=(state.learningRuns||[]).filter(x=>x.domain===domain).length;
+ const version="REA-"+domain.replace(/[^A-Za-z0-9]+/g,"-").toUpperCase().slice(0,16)+"-v"+(prior+1);
+ const supported=feedback.length>0;
+ const output={id:id("REA"),version,domain,observation,target,feedback,status:supported?"DRAFT • EVIDENCE PROVIDED":"DRAFT • REASSESSMENT REQUIRED",assessment:supported?"Feedback has been supplied for review. Compare it with the observation and target; do not treat feedback alone as proof of improvement.":"No reassessment evidence was supplied. The learning hypothesis remains unvalidated.",adaptation:"Proposed next step: define one bounded change, preserve the current baseline, and test the change against the stated target using an independent or fresh scenario.",reassessment:"Run a documented before/after comparison. Record outcome evidence, limitations, dissent and reviewer approval before promoting this version.",createdAt:now(),createdBy:state.role};
+ state.learningRuns=state.learningRuns||[];state.learningRuns.push(output);latestREAOutput=output;save();await logEvent("REA_VERSION_DRAFTED",output.version+" / "+domain);renderLearning();
+}
+$("runREA").addEventListener("click",runREA);
+$("exportREA").addEventListener("click",()=>{if(latestREAOutput)download(latestREAOutput.version+".json",JSON.stringify(latestREAOutput,null,2))});
+
 function render(){
- $("rolePill").textContent="ROLE: "+state.role.toUpperCase();$("roleSelect").value=state.role;$("settingsRole").value=state.role;
+ $("rolePill").textContent="ROLE: "+state.role.toUpperCase();if($("learningCount"))renderLearning();$("roleSelect").value=state.role;$("settingsRole").value=state.role;
  $("statCases").textContent=state.cases.filter(c=>c.status!=="Closed").length;$("statTasks").textContent=state.tasks.filter(t=>t.status!=="Complete").length;$("statDecisions").textContent=state.decisions.filter(d=>d.status==="Pending").length;$("statAudit").textContent=state.audit.length;
  $("homeDepartments").innerHTML=DEPTS.slice(0,6).map(deptCard).join("");$("allDepartments").innerHTML=DEPTS.map(deptCard).join("");bindDeptClicks();
  const recent=state.audit.slice(-5).reverse();$("recentActivity").innerHTML=recent.length?recent.map(a=>'<div class="listrow"><div><strong>'+esc(a.action)+'</strong><small>'+esc(a.detail)+' • '+new Date(a.at).toLocaleString()+'</small></div><span class="status">'+esc(a.actor)+'</span></div>').join():'<div class="empty">No activity yet. Create a case or submit a TriCell decision to begin.</div>';
@@ -111,7 +172,7 @@ $("submitDecision").onclick=async()=>{if(!canWrite())return;const title=$("decis
 $("verifyChain").onclick=async()=>{let prev="GENESIS",ok=true;for(const e of state.audit){const copy={id:e.id,at:e.at,actor:e.actor,action:e.action,detail:e.detail,previousHash:e.previousHash};if(e.previousHash!==prev||e.hash!==await digest(JSON.stringify(copy))){ok=false;break}prev=e.hash}$("chainStatus").textContent=ok?"✓ CHAIN VALID":"⚠ CHAIN MISMATCH";$("chainStatus").style.color=ok?"var(--green)":"var(--red)"};
 $("exportAudit").onclick=()=>download("meta-os-audit.json",JSON.stringify(state.audit,null,2));
 function download(name,data){const a=document.createElement("a");a.href=URL.createObjectURL(new Blob([data],{type:"application/json"}));a.download=name;a.click();URL.revokeObjectURL(a.href)}
-$("resetData").onclick=()=>{if(!canAdmin())return alert("Owner role required.");if(!confirm("Delete all local pilot records from this browser? Export anything you need first."))return;state={cases:[],tasks:[],decisions:[],evidence:[],audit:[],role:"Owner"};localStorage.setItem(storeKey,JSON.stringify(state));logEvent("PILOT_RESET","Local pilot data reset")};
+$("resetData").onclick=()=>{if(!canAdmin())return alert("Owner role required.");if(!confirm("Delete all local pilot records from this browser? Export anything you need first."))return;state={cases:[],tasks:[],decisions:[],evidence:[],audit:[],learningRuns:[],role:"Owner"};localStorage.setItem(storeKey,JSON.stringify(state));logEvent("PILOT_RESET","Local pilot data reset")};
 $("nav").querySelector('[data-view="tr icell"]').dataset.view="tricell";
 render();if(!state.audit.length)logEvent("PILOT_INITIALIZED","Triune Master OS pilot initialized in this browser");
 </script>
