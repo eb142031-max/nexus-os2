@@ -20,6 +20,14 @@ The pilot currently provides:
 - JSON export of the audit ledger
 - Basic operational analytics
 
+## Recursive learning skill: RNPL + REA
+
+The pilot includes the **Recursive Neural Plasticity Network Learning Protocol (RNPL)** paired with the **REA — Proprietary Version Output Engine**.
+
+The governed cycle is Observe → Evaluate → Adapt → Reinforce → Reassess → Release. REA creates structured, versioned learning-output drafts from submitted observations, intended outcomes, and feedback. Outputs preserve the distinction between evidence and hypotheses and require human review before adoption.
+
+This is a workflow and version-output prototype. It does **not** train neural-network weights, modify an underlying AI model, or autonomously change policy. Learning records are stored locally in the browser in this pilot.
+
 ## Important security boundary
 
 This is a **functional local prototype**, not a production security system. Data is stored in browser localStorage and can be changed by anyone with access to that browser profile. Role selection is a demonstration control, not server-enforced authorization. The evidence registry stores metadata only; do not enter sensitive case data or upload protected evidence.
