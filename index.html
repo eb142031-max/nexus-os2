@@ -126,7 +126,7 @@ function bindDeptClicks(){document.querySelectorAll("[data-dept]").forEach(el=>e
 function fillSelect(idName,empty){const s=$(idName);if(!s)return;const old=s.value;s.innerHTML='<option value="">'+empty+'</option>'+state.cases.map(c=>'<option value="'+c.id+'">'+c.id+' — '+esc(c.title)+'</option>').join("");if([...s.options].some(o=>o.value===old))s.value=old}
 function esc(s){return String(s??"").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]))}
 
-let latestREAOutput = null;
+let latestREAOutput = (state.learningRuns||[]).slice(-1)[0]||null;
 function renderLearning(){
  const runs=state.learningRuns||[];
  $("learningCount").textContent=runs.length;
