@@ -123,12 +123,16 @@ class CreatorOsTests(unittest.TestCase):
             media_vault.MEDIA_DIR = old_dir
 
     def test_private_media_rejects_unsupported_type(self):
+        avatar = self.client.post("/api/v1/avatars", headers=self.headers, json={
+            "name": "Media Type Test", "kind": "fictional", "adult_attested": True,
+            "rights_attested": True, "likeness_authorized": False
+        }).json()
         response = self.client.post(
-            "/api/v1/media", params={"avatar_id": "missing"},
+            "/api/v1/media", params={"avatar_id": avatar["id"]},
             headers={**self.headers, "X-File-Name": "script.svg", "X-Media-Type": "image/svg+xml"},
             content=b"<svg/>"
         )
-        self.assertEqual(response.status_code, 404)
+        self.assertEqual(response.status_code, 415)
 
     def test_paid_generation_is_locked(self):
         response = self.client.post("/api/v1/jobs/example/execute", headers=self.headers)
