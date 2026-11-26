@@ -186,7 +186,8 @@ class AutomationCreate(BaseModel):
 class ExportCreate(BaseModel):
     avatar_id: str
     job_id: Optional[str] = None
-    asset_url: str = Field(min_length=8, max_length=2000)
+    asset_url: Optional[str] = Field(default=None, min_length=8, max_length=2000)
+    media_id: Optional[str] = None
     ai_disclosure: bool = True
     human_reviewed: bool = False
 
@@ -453,7 +454,16 @@ def create_export(body: ExportCreate, db: Session = Depends(db_session), key: Ap
         raise HTTPException(404, "Job not found for this avatar.")
     if not body.ai_disclosure:
         raise HTTPException(422, "AI-generated or materially altered media must retain clear AI disclosure.")
-    row = ExportRecord(avatar_id=avatar.id, job_id=body.job_id, asset_url=body.asset_url, ai_disclosure=True,
+    if body.media_id:
+        media_asset = db.query(MediaAsset).filter_by(id=body.media_id, avatar_id=avatar.id).first()
+        if not media_asset:
+            raise HTTPException(404, "Private media asset not found for this avatar.")
+        export_reference = "media://" + media_asset.id
+    elif body.asset_url:
+        export_reference = body.asset_url
+    else:
+        raise HTTPException(422, "Select a private media asset or provide an external asset URL.")
+    row = ExportRecord(avatar_id=avatar.id, job_id=body.job_id, asset_url=export_reference, ai_disclosure=True,
                        human_reviewed=body.human_reviewed, state="ready_for_manual_upload" if body.human_reviewed else "awaiting_human_review")
     db.add(row)
     db.commit()
