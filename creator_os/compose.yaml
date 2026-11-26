@@ -1,0 +1,51 @@
+services:
+  db:
+    image: postgres:17-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: darkleyla
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?Set POSTGRES_PASSWORD in creator_os/.env}
+      POSTGRES_DB: darkleyla
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U darkleyla -d darkleyla"]
+      interval: 5s
+      timeout: 5s
+      retries: 20
+    volumes:
+      - creator_db:/var/lib/postgresql/data
+
+  api:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    restart: unless-stopped
+    env_file: .env
+    environment:
+      DATABASE_URL: postgresql+psycopg://darkleyla:${POSTGRES_PASSWORD}@db:5432/darkleyla
+      DARKLEYLA_MEDIA_DIR: /app/private_media
+    ports:
+      - "127.0.0.1:8000:8000"
+    volumes:
+      - creator_media:/app/private_media
+    depends_on:
+      db:
+        condition: service_healthy
+
+  worker:
+    build:
+      context: .
+      dockerfile: Dockerfile.worker
+    restart: unless-stopped
+    env_file: .env
+    environment:
+      DATABASE_URL: postgresql+psycopg://darkleyla:${POSTGRES_PASSWORD}@db:5432/darkleyla
+      DARKLEYLA_MEDIA_DIR: /app/private_media
+    volumes:
+      - creator_media:/app/private_media
+    depends_on:
+      db:
+        condition: service_healthy
+
+volumes:
+  creator_db:
+  creator_media:
