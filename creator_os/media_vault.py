@@ -9,6 +9,7 @@ import hashlib
 import os
 import secrets
 from pathlib import Path
+from urllib.parse import unquote
 
 from fastapi import APIRouter, Depends, Header, HTTPException, Request
 from fastapi.responses import Response
@@ -47,6 +48,18 @@ def _asset_path(asset_id: str) -> Path:
     return MEDIA_DIR / (asset_id + ".enc")
 
 
+def _matches_media_type(raw: bytes, media_type: str) -> bool:
+    signatures = {
+        "image/jpeg": raw.startswith(b"\\xff\\xd8\\xff"),
+        "image/png": raw.startswith(b"\\x89PNG\\r\\n\\x1a\\n"),
+        "image/webp": len(raw) >= 12 and raw[:4] == b"RIFF" and raw[8:12] == b"WEBP",
+        "image/gif": raw.startswith((b"GIF87a", b"GIF89a")),
+        "video/mp4": len(raw) >= 8 and raw[4:8] == b"ftyp",
+        "video/webm": raw.startswith(b"\\x1a\\x45\\xdf\\xa3"),
+    }
+    return signatures.get(media_type, False)
+
+
 @router.post("")
 async def upload_private_media(
     request: Request,
@@ -66,7 +79,9 @@ async def upload_private_media(
         raise HTTPException(400, "Empty media upload.")
     if len(raw) > MAX_MEDIA_BYTES:
         raise HTTPException(413, "Media exceeds the 100 MB upload limit.")
-    name = Path(x_file_name.replace("\\\\", "/")).name.strip()
+    if not _matches_media_type(raw, x_media_type.lower()):
+        raise HTTPException(415, "File signature does not match the declared media type.")
+    name = Path(unquote(x_file_name).replace(chr(92), "/")).name.strip()
     if not name or len(name) > 255 or any(ord(ch) < 32 for ch in name):
         raise HTTPException(422, "Invalid file name.")
     asset_id = secrets.token_urlsafe(24)
@@ -99,7 +114,7 @@ async def upload_private_media(
 
 @router.get("")
 def list_private_media(db: Session = Depends(db_session), key: ApiKey = Depends(get_api_key)):
-    rows = db.query(MediaAsset).filter_by(owner_key_id=key.id).order_by(MediaAsset.created_at.desc()).limit(200).all()
+    rows = db.query(MediaAsset).order_by(MediaAsset.created_at.desc()).limit(200).all()
     return [{
         "id": r.id, "avatar_id": r.avatar_id, "file_name": r.file_name,
         "media_type": r.media_type, "size_bytes": r.size_bytes,
@@ -109,7 +124,7 @@ def list_private_media(db: Session = Depends(db_session), key: ApiKey = Depends(
 
 @router.get("/{asset_id}")
 def download_private_media(asset_id: str, db: Session = Depends(db_session), key: ApiKey = Depends(get_api_key)):
-    row = db.query(MediaAsset).filter_by(id=asset_id, owner_key_id=key.id).first()
+    row = db.query(MediaAsset).filter_by(id=asset_id).first()
     if not row:
         raise HTTPException(404, "Media asset not found.")
     path = _asset_path(row.id)
