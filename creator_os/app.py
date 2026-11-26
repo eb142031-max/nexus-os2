@@ -1,12 +1,13 @@
 from __future__ import annotations
 import base64, hashlib, json, os, secrets
 from datetime import datetime, timezone
+from urllib.parse import urlencode
 from pathlib import Path
 from typing import Optional
 import httpx
 from cryptography.hazmat.primitives.ciphers.aead import AESGCM
 from fastapi import Depends, FastAPI, Header, HTTPException, Request
-from fastapi.responses import FileResponse
+from fastapi.responses import FileResponse, RedirectResponse
 from pydantic import BaseModel, Field
 from sqlalchemy import Boolean, Column, DateTime, ForeignKey, Integer, String, Text, create_engine
 from sqlalchemy.orm import Session, declarative_base, sessionmaker
@@ -36,6 +37,21 @@ class Integration(Base):
     provider = Column(String(40), primary_key=True)
     encrypted_secret = Column(Text, nullable=False)
     updated_at = Column(DateTime(timezone=True), default=utcnow, nullable=False)
+
+class OAuthState(Base):
+    __tablename__ = "oauth_states"
+    state = Column(String(128), primary_key=True)
+    encrypted_verifier = Column(Text, nullable=False)
+    created_at = Column(DateTime(timezone=True), default=utcnow, nullable=False)
+
+class FanvueConnection(Base):
+    __tablename__ = "fanvue_connections"
+    id = Column(String(40), primary_key=True, default="owner")
+    encrypted_access_token = Column(Text, nullable=False)
+    encrypted_refresh_token = Column(Text, nullable=False)
+    scopes = Column(Text, default="", nullable=False)
+    expires_at = Column(DateTime(timezone=True), nullable=False)
+    connected_at = Column(DateTime(timezone=True), default=utcnow, nullable=False)
 
 class Avatar(Base):
     __tablename__ = "avatars"
@@ -221,9 +237,10 @@ def save_celebmaker(body: ProviderSecret, db: Session = Depends(db_session), key
 @app.get("/api/v1/integrations")
 def integrations(db: Session = Depends(db_session), key: ApiKey = Depends(get_api_key)):
     configured = {r.provider for r in db.query(Integration).all()}
+    fanvue_connected = db.query(FanvueConnection).filter_by(id="owner").first() is not None
     return [
         {"provider": "celebmaker", "configured": "celebmaker" in configured, "capability": "server-side API validation and options discovery; generation gated"},
-        {"provider": "fanvue", "configured": False, "capability": "manual export now; OAuth requires registered developer app"},
+        {"provider": "fanvue", "configured": fanvue_connected, "capability": "OAuth account connection; manual upload remains the publishing workflow"},
         {"provider": "ourdream", "configured": False, "capability": "disabled pending official API and commercial rights"},
         {"provider": "joi", "configured": False, "capability": "disabled pending exact service, official API and commercial-use verification"},
     ]
@@ -248,6 +265,93 @@ async def check_celebmaker(db: Session = Depends(db_session), key: ApiKey = Depe
     return {"connected": True, "principal": me_data, "api_available_credits": credits.get("apiAvailableCredits"),
             "image_modes": options.get("imageGeneration", {}).get("modes", []),
             "note": "Connection and options checks do not create a paid generation job."}
+
+
+@app.post("/api/v1/integrations/fanvue/start")
+def start_fanvue_oauth(db: Session = Depends(db_session), key: ApiKey = Depends(get_api_key)):
+    client_id = os.getenv("FANVUE_CLIENT_ID", "")
+    redirect_uri = os.getenv("FANVUE_REDIRECT_URI", "")
+    if not client_id or not redirect_uri or not os.getenv("FANVUE_CLIENT_SECRET", ""):
+        raise HTTPException(503, "Fanvue OAuth is not configured. Register your app and set its client ID, client secret and exact callback URI.")
+    verifier = base64.urlsafe_b64encode(secrets.token_bytes(32)).decode("ascii").rstrip("=")
+    challenge = base64.urlsafe_b64encode(hashlib.sha256(verifier.encode("utf-8")).digest()).decode("ascii").rstrip("=")
+    state = secrets.token_urlsafe(32)
+    db.add(OAuthState(state=state, encrypted_verifier=encrypt_secret(verifier), created_at=utcnow()))
+    db.commit()
+    requested = os.getenv("FANVUE_SCOPES", "read:self").split()
+    scopes = list(dict.fromkeys(["openid", "offline_access", "offline"] + requested))
+    params = {"client_id": client_id, "redirect_uri": redirect_uri, "response_type": "code",
+              "scope": " ".join(scopes), "state": state, "code_challenge": challenge,
+              "code_challenge_method": "S256"}
+    audit(db, key.id, "fanvue.oauth_started", "integration", "fanvue", {"scopes": scopes})
+    return {"authorization_url": "https://auth.fanvue.com/oauth2/auth?" + urlencode(params),
+            "scopes": scopes, "publishing_mode": "manual_only"}
+
+@app.get("/oauth/fanvue/callback")
+async def fanvue_oauth_callback(code: str, state: str, db: Session = Depends(db_session)):
+    pending = db.query(OAuthState).filter_by(state=state).first()
+    if not pending:
+        raise HTTPException(400, "Invalid or expired Fanvue OAuth state.")
+    created = pending.created_at
+    if created.tzinfo is None:
+        created = created.replace(tzinfo=timezone.utc)
+    if (utcnow() - created).total_seconds() > 600:
+        db.delete(pending)
+        db.commit()
+        raise HTTPException(400, "Fanvue OAuth attempt expired. Start again.")
+    verifier = decrypt_secret(pending.encrypted_verifier)
+    db.delete(pending)
+    db.commit()
+    client_id = os.getenv("FANVUE_CLIENT_ID", "")
+    client_secret = os.getenv("FANVUE_CLIENT_SECRET", "")
+    redirect_uri = os.getenv("FANVUE_REDIRECT_URI", "")
+    if not client_id or not client_secret or not redirect_uri:
+        raise HTTPException(503, "Fanvue OAuth server configuration is incomplete.")
+    try:
+        async with httpx.AsyncClient(timeout=25.0) as client:
+            response = await client.post("https://auth.fanvue.com/oauth2/token",
+                data={"grant_type": "authorization_code", "code": code,
+                      "redirect_uri": redirect_uri, "code_verifier": verifier},
+                auth=(client_id, client_secret),
+                headers={"Content-Type": "application/x-www-form-urlencoded"})
+        if response.status_code >= 400:
+            raise HTTPException(502, "Fanvue token exchange failed. Verify app credentials, callback URI and granted scopes.")
+        tokens = response.json()
+        if not tokens.get("access_token") or not tokens.get("refresh_token") or not tokens.get("expires_in"):
+            raise HTTPException(502, "Fanvue returned an incomplete token set.")
+    except httpx.HTTPError as exc:
+        raise HTTPException(502, "Unable to reach Fanvue token service.") from exc
+    row = db.query(FanvueConnection).filter_by(id="owner").first()
+    expires = datetime.fromtimestamp(utcnow().timestamp() + int(tokens["expires_in"]), tz=timezone.utc)
+    values = {"encrypted_access_token": encrypt_secret(tokens["access_token"]),
+              "encrypted_refresh_token": encrypt_secret(tokens["refresh_token"]),
+              "scopes": tokens.get("scope", ""), "expires_at": expires, "connected_at": utcnow()}
+    if row:
+        for field, value in values.items():
+            setattr(row, field, value)
+    else:
+        db.add(FanvueConnection(id="owner", **values))
+    db.commit()
+    audit(db, None, "fanvue.oauth_connected", "integration", "fanvue", {"scopes": tokens.get("scope", "")})
+    return RedirectResponse(url="/?fanvue=connected", status_code=303)
+
+@app.get("/api/v1/integrations/fanvue/status")
+def fanvue_status(db: Session = Depends(db_session), key: ApiKey = Depends(get_api_key)):
+    row = db.query(FanvueConnection).filter_by(id="owner").first()
+    if not row:
+        return {"connected": False, "publishing_mode": "manual_only"}
+    return {"connected": True, "scopes": row.scopes, "expires_at": row.expires_at.isoformat(),
+            "publishing_mode": "manual_only", "tokens_exposed": False}
+
+@app.delete("/api/v1/integrations/fanvue")
+def disconnect_fanvue(db: Session = Depends(db_session), key: ApiKey = Depends(get_api_key)):
+    row = db.query(FanvueConnection).filter_by(id="owner").first()
+    if row:
+        db.delete(row)
+        db.commit()
+        audit(db, key.id, "fanvue.oauth_disconnected", "integration", "fanvue", {})
+    return {"connected": False, "local_tokens_deleted": True,
+            "note": "Also revoke the app in Fanvue account settings to terminate remote authorization."}
 
 @app.post("/api/v1/jobs")
 def create_job(body: JobCreate, db: Session = Depends(db_session), key: ApiKey = Depends(get_api_key)):
