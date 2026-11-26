@@ -52,6 +52,17 @@ class CreatorOsTests(unittest.TestCase):
         })
         self.assertEqual(response.status_code, 422)
 
+    def test_fanvue_oauth_start_builds_pkce_url(self):
+        os.environ["FANVUE_CLIENT_ID"] = "test-client"
+        os.environ["FANVUE_CLIENT_SECRET"] = "test-secret"
+        os.environ["FANVUE_REDIRECT_URI"] = "https://creator.example.test/oauth/fanvue/callback"
+        response = self.client.post("/api/v1/integrations/fanvue/start", headers=self.headers)
+        self.assertEqual(response.status_code, 200)
+        data = response.json()
+        self.assertEqual(data["publishing_mode"], "manual_only")
+        self.assertIn("code_challenge_method=S256", data["authorization_url"])
+        self.assertIn("offline_access", data["scopes"])
+
     def test_paid_generation_is_locked(self):
         response = self.client.post("/api/v1/jobs/example/execute", headers=self.headers)
         self.assertEqual(response.status_code, 423)
