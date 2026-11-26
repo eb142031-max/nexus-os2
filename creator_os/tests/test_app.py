@@ -158,7 +158,7 @@ class CreatorOsTests(unittest.TestCase):
     def test_dollhouse_navigation_targets_real_sections_and_actions(self):
         import re
         from pathlib import Path
-        html = (Path(__file__).parent / "static" / "index.html").read_text(encoding="utf-8")
+        html = (Path(__file__).parent.parent / "static" / "index.html").read_text(encoding="utf-8")
         ids = set(re.findall('id="([^"]+)"', html))
         targets = re.findall(r'href="#([^"]+)"', html)
         self.assertGreaterEqual(len(re.findall(r'class="room"', html)), 9)
