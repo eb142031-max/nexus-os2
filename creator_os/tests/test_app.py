@@ -93,6 +93,43 @@ class CreatorOsTests(unittest.TestCase):
         resumed = self.client.post("/api/v1/automations/" + rule_id + "/resume", headers=self.headers)
         self.assertTrue(resumed.json()["enabled"])
 
+    def test_private_media_upload_download_and_delete(self):
+        import tempfile
+        from pathlib import Path
+        import media_vault
+        old_dir = media_vault.MEDIA_DIR
+        with tempfile.TemporaryDirectory() as temp_dir:
+            media_vault.MEDIA_DIR = Path(temp_dir)
+            avatar = self.client.post("/api/v1/avatars", headers=self.headers, json={
+                "name": "Private Media Adult", "kind": "fictional", "adult_attested": True,
+                "rights_attested": True, "likeness_authorized": False
+            }).json()
+            uploaded = self.client.post(
+                "/api/v1/media", params={"avatar_id": avatar["id"]},
+                headers={**self.headers, "X-File-Name": "portrait.png", "X-Media-Type": "image/png"},
+                content=b"private-test-image-bytes"
+            )
+            self.assertEqual(uploaded.status_code, 200)
+            data = uploaded.json()
+            self.assertTrue(data["encrypted_at_rest"])
+            self.assertIsNone(data["public_url"])
+            stored = next(Path(temp_dir).glob("*.enc")).read_bytes()
+            self.assertNotIn(b"private-test-image-bytes", stored)
+            downloaded = self.client.get("/api/v1/media/" + data["id"], headers=self.headers)
+            self.assertEqual(downloaded.content, b"private-test-image-bytes")
+            deleted = self.client.delete("/api/v1/media/" + data["id"], headers=self.headers)
+            self.assertTrue(deleted.json()["deleted"])
+            self.assertEqual(self.client.get("/api/v1/media/" + data["id"], headers=self.headers).status_code, 404)
+            media_vault.MEDIA_DIR = old_dir
+
+    def test_private_media_rejects_unsupported_type(self):
+        response = self.client.post(
+            "/api/v1/media", params={"avatar_id": "missing"},
+            headers={**self.headers, "X-File-Name": "script.svg", "X-Media-Type": "image/svg+xml"},
+            content=b"<svg/>"
+        )
+        self.assertEqual(response.status_code, 404)
+
     def test_paid_generation_is_locked(self):
         response = self.client.post("/api/v1/jobs/example/execute", headers=self.headers)
         self.assertEqual(response.status_code, 423)
