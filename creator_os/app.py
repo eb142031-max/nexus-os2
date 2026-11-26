@@ -1,6 +1,6 @@
 from __future__ import annotations
 import base64, hashlib, json, os, secrets
-from datetime import datetime, timezone
+from datetime import datetime, timezone, timedelta
 from urllib.parse import urlencode
 from pathlib import Path
 from typing import Optional
@@ -75,6 +75,20 @@ class GenerationJob(Base):
     state = Column(String(40), default="draft_pending_manual_execution", nullable=False)
     provider_job_id = Column(String(120), nullable=True)
     provider_response = Column(Text, nullable=True)
+    created_at = Column(DateTime(timezone=True), default=utcnow, nullable=False)
+
+class AutomationRule(Base):
+    __tablename__ = "automation_rules"
+    id = Column(String, primary_key=True, default=lambda: secrets.token_urlsafe(12))
+    avatar_id = Column(String, ForeignKey("avatars.id"), nullable=False)
+    name = Column(String(120), nullable=False)
+    prompt_template = Column(Text, nullable=False)
+    mode = Column(String(80), nullable=False)
+    aspect_ratio = Column(String(16), nullable=False)
+    interval_minutes = Column(Integer, nullable=False)
+    enabled = Column(Boolean, default=True, nullable=False)
+    next_run_at = Column(DateTime(timezone=True), nullable=False)
+    last_run_at = Column(DateTime(timezone=True), nullable=True)
     created_at = Column(DateTime(timezone=True), default=utcnow, nullable=False)
 
 class ExportRecord(Base):
@@ -161,6 +175,14 @@ class JobCreate(BaseModel):
     prompt: str = Field(min_length=5, max_length=5000)
     mode: str = Field(default="zit-realistic", min_length=2, max_length=80)
     aspect_ratio: str = Field(default="9:16", pattern="^(1:1|2:3|3:2|3:4|4:3|4:5|5:4|9:16|16:9)$")
+class AutomationCreate(BaseModel):
+    avatar_id: str
+    name: str = Field(min_length=1, max_length=120)
+    prompt_template: str = Field(min_length=5, max_length=5000)
+    mode: str = Field(default="zit-realistic", min_length=2, max_length=80)
+    aspect_ratio: str = Field(default="9:16", pattern="^(1:1|2:3|3:2|3:4|4:3|4:5|5:4|9:16|16:9)$")
+    interval_minutes: int = Field(ge=60, le=43200)
+
 class ExportCreate(BaseModel):
     avatar_id: str
     job_id: Optional[str] = None
@@ -377,6 +399,50 @@ def list_jobs(db: Session = Depends(db_session), key: ApiKey = Depends(get_api_k
 @app.post("/api/v1/jobs/{job_id}/execute")
 def execute_job(job_id: str, db: Session = Depends(db_session), key: ApiKey = Depends(get_api_key)):
     raise HTTPException(423, "Paid generation is intentionally locked. Connection checks and draft creation are enabled; live execution requires verified per-mode cost controls and explicit per-job spend approval.")
+
+
+@app.post("/api/v1/automations")
+def create_automation(body: AutomationCreate, db: Session = Depends(db_session), key: ApiKey = Depends(get_api_key)):
+    avatar = db.query(Avatar).filter_by(id=body.avatar_id).first()
+    if not avatar:
+        raise HTTPException(404, "Avatar not found.")
+    rule = AutomationRule(avatar_id=avatar.id, name=body.name, prompt_template=body.prompt_template,
+        mode=body.mode, aspect_ratio=body.aspect_ratio, interval_minutes=body.interval_minutes,
+        enabled=True, next_run_at=utcnow() + timedelta(minutes=body.interval_minutes))
+    db.add(rule)
+    db.commit()
+    audit(db, key.id, "automation.created", "automation", rule.id, {"interval_minutes": rule.interval_minutes})
+    return {"id": rule.id, "name": rule.name, "enabled": rule.enabled, "next_run_at": rule.next_run_at.isoformat(),
+            "action": "enqueue_generation_draft_only"}
+
+@app.get("/api/v1/automations")
+def list_automations(db: Session = Depends(db_session), key: ApiKey = Depends(get_api_key)):
+    rows = db.query(AutomationRule).order_by(AutomationRule.created_at.desc()).limit(100).all()
+    return [{"id": r.id, "avatar_id": r.avatar_id, "name": r.name, "prompt_template": r.prompt_template,
+        "mode": r.mode, "aspect_ratio": r.aspect_ratio, "interval_minutes": r.interval_minutes,
+        "enabled": r.enabled, "next_run_at": r.next_run_at.isoformat(),
+        "last_run_at": r.last_run_at.isoformat() if r.last_run_at else None} for r in rows]
+
+@app.post("/api/v1/automations/{rule_id}/pause")
+def pause_automation(rule_id: str, db: Session = Depends(db_session), key: ApiKey = Depends(get_api_key)):
+    rule = db.query(AutomationRule).filter_by(id=rule_id).first()
+    if not rule:
+        raise HTTPException(404, "Automation not found.")
+    rule.enabled = False
+    db.commit()
+    audit(db, key.id, "automation.paused", "automation", rule.id, {})
+    return {"id": rule.id, "enabled": False}
+
+@app.post("/api/v1/automations/{rule_id}/resume")
+def resume_automation(rule_id: str, db: Session = Depends(db_session), key: ApiKey = Depends(get_api_key)):
+    rule = db.query(AutomationRule).filter_by(id=rule_id).first()
+    if not rule:
+        raise HTTPException(404, "Automation not found.")
+    rule.enabled = True
+    rule.next_run_at = utcnow() + timedelta(minutes=rule.interval_minutes)
+    db.commit()
+    audit(db, key.id, "automation.resumed", "automation", rule.id, {})
+    return {"id": rule.id, "enabled": True, "next_run_at": rule.next_run_at.isoformat()}
 
 @app.post("/api/v1/exports")
 def create_export(body: ExportCreate, db: Session = Depends(db_session), key: ApiKey = Depends(get_api_key)):
