@@ -472,3 +472,8 @@ def list_audit(db: Session = Depends(db_session), key: ApiKey = Depends(get_api_
     rows = db.query(AuditEvent).order_by(AuditEvent.id.desc()).limit(200).all()
     return [{"id": r.id, "event": r.event, "object_type": r.object_type, "object_id": r.object_id,
              "details": json.loads(r.details), "created_at": r.created_at.isoformat()} for r in rows]
+
+
+# Private media vault: encrypted files, authenticated access only.
+from media_vault import router as media_router
+app.include_router(media_router)
