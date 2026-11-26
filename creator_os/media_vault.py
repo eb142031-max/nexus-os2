@@ -155,7 +155,7 @@ def download_private_media(asset_id: str, db: Session = Depends(db_session), key
 
 @router.delete("/{asset_id}")
 def delete_private_media(asset_id: str, db: Session = Depends(db_session), key: ApiKey = Depends(get_api_key)):
-    row = db.query(MediaAsset).filter_by(id=asset_id, owner_key_id=key.id).first()
+    row = db.query(MediaAsset).filter_by(id=asset_id).first()
     if not row:
         raise HTTPException(404, "Media asset not found.")
     path = _asset_path(row.id)
