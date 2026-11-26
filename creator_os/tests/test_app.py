@@ -155,5 +155,20 @@ class CreatorOsTests(unittest.TestCase):
         })
         self.assertEqual(response.status_code, 422)
 
+    def test_dollhouse_navigation_targets_real_sections_and_actions(self):
+        import re
+        from pathlib import Path
+        html = (Path(__file__).parent / "static" / "index.html").read_text(encoding="utf-8")
+        ids = set(re.findall(r'\\bid="([^"]+)"', html))
+        targets = re.findall(r'href="#([^"]+)"', html)
+        self.assertGreaterEqual(len(re.findall(r'class="room"', html)), 9)
+        self.assertTrue(targets, "Navigation should expose section links")
+        self.assertEqual([], [target for target in targets if target not in ids],
+                         "Every tab and dollhouse room must target an existing section")
+        handlers = set(re.findall(r'onclick="([A-Za-z_$][\\w$]*)\\s*\\(', html))
+        functions = set(re.findall(r'function\\s+([A-Za-z_$][\\w$]*)\\s*\\(', html))
+        self.assertEqual([], sorted(handlers - functions),
+                         "Every inline action button must call a defined JavaScript process")
+
 if __name__ == "__main__":
     unittest.main()
