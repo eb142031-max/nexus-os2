@@ -18,7 +18,7 @@ Dark Leyla Creator OS is a standalone FastAPI application with a private creator
 ## Provider status
 
 - **CelebMaker:** credential storage and live connection/options checks are implemented. Paid generation is deliberately locked until the app has verified per-mode cost controls and explicit per-job spend approval. API-generated media has a documented 30-day retention period; a future media-ingestion worker must archive approved files promptly.
-- **Fanvue:** manual export is implemented. OAuth integration requires an app registered by the owner, approved client credentials, redirect URI and scopes. Current Fanvue policy specifies OAuth 2.0 with PKCE, not personal API keys. This MVP does not publish to Fanvue.
+- **Fanvue:** server-side OAuth 2.0 with PKCE account connection is implemented. Register an app in the Fanvue Developer Area, configure client ID, client secret, exact callback URI and allowed scopes, then connect from the dashboard. Tokens are encrypted at rest. Publishing remains manual; this MVP does not create posts or upload media through Fanvue.
 - **OurDream:** disabled. Its terms prohibit scraping/reverse-engineering and automated access outside an officially provided API, and restrict use to personal/non-commercial purposes. Re-enable only after written commercial permission and official API documentation.
 - **JOI:** disabled pending identification of the exact service, official API documentation and commercial-use rights. No browser automation, scraping or terms circumvention.
 
