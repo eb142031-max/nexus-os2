@@ -177,6 +177,13 @@ def create_api_key(body: KeyCreate, request: Request, db: Session = Depends(db_s
 def me(key: ApiKey = Depends(get_api_key)):
     return {"authenticated": True, "key_name": key.name, "key_id": key.id}
 
+@app.delete("/api/v1/me/key")
+def revoke_current_key(db: Session = Depends(db_session), key: ApiKey = Depends(get_api_key)):
+    key.revoked = True
+    db.commit()
+    audit(db, key.id, "api_key.revoked", "api_key", key.id, {})
+    return {"revoked": True, "key_id": key.id}
+
 @app.post("/api/v1/avatars")
 def create_avatar(body: AvatarCreate, db: Session = Depends(db_session), key: ApiKey = Depends(get_api_key)):
     if not body.adult_attested or not body.rights_attested:
@@ -199,6 +206,8 @@ def list_avatars(db: Session = Depends(db_session), key: ApiKey = Depends(get_ap
 
 @app.put("/api/v1/integrations/celebmaker")
 def save_celebmaker(body: ProviderSecret, db: Session = Depends(db_session), key: ApiKey = Depends(get_api_key)):
+    if not body.api_key.startswith(("cmk_live_", "cmk_test_")):
+        raise HTTPException(422, "Expected a CelebMaker API key beginning cmk_live_ or cmk_test_.")
     encrypted = encrypt_secret(body.api_key)
     row = db.query(Integration).filter_by(provider="celebmaker").first()
     if row:
