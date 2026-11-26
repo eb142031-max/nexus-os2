@@ -50,12 +50,12 @@ def _asset_path(asset_id: str) -> Path:
 
 def _matches_media_type(raw: bytes, media_type: str) -> bool:
     signatures = {
-        "image/jpeg": raw.startswith(b"\\xff\\xd8\\xff"),
-        "image/png": raw.startswith(b"\\x89PNG\\r\\n\\x1a\\n"),
+        "image/jpeg": raw.startswith(b"\${token}\${token}\${token}"),
+        "image/png": raw.startswith(b"\${token}PNG\${token}\${token}\${token}\${token}"),
         "image/webp": len(raw) >= 12 and raw[:4] == b"RIFF" and raw[8:12] == b"WEBP",
         "image/gif": raw.startswith((b"GIF87a", b"GIF89a")),
         "video/mp4": len(raw) >= 8 and raw[4:8] == b"ftyp",
-        "video/webm": raw.startswith(b"\\x1a\\x45\\xdf\\xa3"),
+        "video/webm": raw.startswith(b"\${token}\${token}\${token}\${token}"),
     }
     return signatures.get(media_type, False)
 
