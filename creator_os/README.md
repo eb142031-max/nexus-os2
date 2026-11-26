@@ -9,6 +9,7 @@ Dark Leyla Creator OS is a standalone FastAPI application with a private creator
 - Avatar registry with adult-status, rights and likeness attestations.
 - CelebMaker connection check (/me, /credits, /generation-options) using its documented server-side bearer-key API.
 - Generation draft queue. No provider generation request is submitted and no credits are spent.
+- Scheduled automation rules with pause/resume controls and a separate worker that enqueues generation drafts on a schedule; the worker never calls providers.
 - Manual export records. No Fanvue publishing or automated upload is performed.
 - Fanvue, OurDream and JOI connector status disclosures.
 - API audit event history.
@@ -29,7 +30,7 @@ Dark Leyla Creator OS is a standalone FastAPI application with a private creator
 3. Install dependencies with pip install -r requirements.txt.
 4. Copy .env.example to .env and replace both placeholder secrets with generated random values.
 5. Load the environment and run uvicorn app:app --reload.
-6. Open http://127.0.0.1:8000. API documentation is at /docs.
+6. Open http://127.0.0.1:8000. API documentation is at /docs. In a second terminal, start the scheduler with python worker.py. The worker requires the same DATABASE_URL and environment secrets as the API.
 
 Generate an API key using the dashboard first-run form or the bootstrap endpoint:
 POST /api/v1/admin/api-keys with Authorization: Bearer YOUR_BOOTSTRAP_TOKEN and JSON body {"name":"Primary Creator Key"}.
