@@ -77,6 +77,22 @@ class CreatorOsTests(unittest.TestCase):
         self.assertIn("code_challenge_method=S256", data["authorization_url"])
         self.assertIn("offline_access", data["scopes"])
 
+    def test_automation_rule_can_be_created_paused_and_resumed(self):
+        avatar = self.client.post("/api/v1/avatars", headers=self.headers, json={
+            "name": "Automation Character", "kind": "fictional", "adult_attested": True,
+            "rights_attested": True, "likeness_authorized": False
+        }).json()
+        rule = self.client.post("/api/v1/automations", headers=self.headers, json={
+            "avatar_id": avatar["id"], "name": "Daily draft", "prompt_template": "Adult editorial draft prompt",
+            "mode": "zit-realistic", "aspect_ratio": "9:16", "interval_minutes": 1440
+        })
+        self.assertEqual(rule.status_code, 200)
+        rule_id = rule.json()["id"]
+        paused = self.client.post("/api/v1/automations/" + rule_id + "/pause", headers=self.headers)
+        self.assertFalse(paused.json()["enabled"])
+        resumed = self.client.post("/api/v1/automations/" + rule_id + "/resume", headers=self.headers)
+        self.assertTrue(resumed.json()["enabled"])
+
     def test_paid_generation_is_locked(self):
         response = self.client.post("/api/v1/jobs/example/execute", headers=self.headers)
         self.assertEqual(response.status_code, 423)
