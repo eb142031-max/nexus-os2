@@ -159,14 +159,14 @@ class CreatorOsTests(unittest.TestCase):
         import re
         from pathlib import Path
         html = (Path(__file__).parent / "static" / "index.html").read_text(encoding="utf-8")
-        ids = set(re.findall(r'\\bid="([^"]+)"', html))
+        ids = set(re.findall('id="([^"]+)"', html))
         targets = re.findall(r'href="#([^"]+)"', html)
         self.assertGreaterEqual(len(re.findall(r'class="room"', html)), 9)
         self.assertTrue(targets, "Navigation should expose section links")
         self.assertEqual([], [target for target in targets if target not in ids],
                          "Every tab and dollhouse room must target an existing section")
-        handlers = set(re.findall(r'onclick="([A-Za-z_$][\\w$]*)\\s*\\(', html))
-        functions = set(re.findall(r'function\\s+([A-Za-z_$][\\w$]*)\\s*\\(', html))
+        handlers = set(re.findall('onclick="([A-Za-z_$][A-Za-z0-9_$]*)', html))
+        functions = set(re.findall('function ([A-Za-z_$][A-Za-z0-9_$]*)', html))
         self.assertEqual([], sorted(handlers - functions),
                          "Every inline action button must call a defined JavaScript process")
 
