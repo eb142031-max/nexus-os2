@@ -447,6 +447,8 @@ def resume_automation(rule_id: str, db: Session = Depends(db_session), key: ApiK
 
 @app.post("/api/v1/exports")
 def create_export(body: ExportCreate, db: Session = Depends(db_session), key: ApiKey = Depends(get_api_key)):
+    # Lazy import avoids the app/media_vault module cycle while making the model available here.
+    from media_vault import MediaAsset
     avatar = db.query(Avatar).filter_by(id=body.avatar_id).first()
     if not avatar:
         raise HTTPException(404, "Avatar not found.")
