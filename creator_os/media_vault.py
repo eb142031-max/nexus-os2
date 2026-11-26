@@ -110,7 +110,13 @@ async def upload_private_media(
         sha256=hashlib.sha256(raw).hexdigest(), created_at=utcnow(),
     )
     db.add(row)
-    db.commit()
+    try:
+        db.commit()
+    except Exception:
+        db.rollback()
+        if destination.exists():
+            destination.unlink()
+        raise
     audit(db, key.id, "media.uploaded", "media_asset", asset_id,
           {"avatar_id": avatar.id, "size_bytes": len(raw), "media_type": row.media_type})
     return {
@@ -159,9 +165,9 @@ def delete_private_media(asset_id: str, db: Session = Depends(db_session), key: 
     if not row:
         raise HTTPException(404, "Media asset not found.")
     path = _asset_path(row.id)
-    if path.exists():
-        path.unlink()
     db.delete(row)
     db.commit()
+    if path.exists():
+        path.unlink()
     audit(db, key.id, "media.deleted", "media_asset", asset_id, {})
     return {"deleted": True, "id": asset_id}
