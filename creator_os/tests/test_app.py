@@ -52,6 +52,20 @@ class CreatorOsTests(unittest.TestCase):
         })
         self.assertEqual(response.status_code, 422)
 
+    def test_celebmaker_key_is_saved_without_returning_secret(self):
+        response = self.client.put("/api/v1/integrations/celebmaker", headers=self.headers,
+            json={"api_key": "cmk_test_" + "a" * 32})
+        self.assertEqual(response.status_code, 200)
+        self.assertFalse(response.json()["secret_returned"])
+        self.assertNotIn("api_key", response.json())
+        providers = self.client.get("/api/v1/integrations", headers=self.headers).json()
+        self.assertTrue(next(p for p in providers if p["provider"] == "celebmaker")["configured"])
+
+    def test_invalid_celebmaker_key_rejected(self):
+        response = self.client.put("/api/v1/integrations/celebmaker", headers=self.headers,
+            json={"api_key": "not-a-provider-key"})
+        self.assertEqual(response.status_code, 422)
+
     def test_fanvue_oauth_start_builds_pkce_url(self):
         os.environ["FANVUE_CLIENT_ID"] = "test-client"
         os.environ["FANVUE_CLIENT_SECRET"] = "test-secret"
