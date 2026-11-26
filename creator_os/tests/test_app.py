@@ -115,6 +115,12 @@ class CreatorOsTests(unittest.TestCase):
             self.assertIsNone(data["public_url"])
             stored = next(Path(temp_dir).glob("*.enc")).read_bytes()
             self.assertNotIn(b"private-test-image-bytes", stored)
+            export = self.client.post("/api/v1/exports", headers=self.headers, json={
+                "avatar_id": avatar["id"], "media_id": data["id"],
+                "ai_disclosure": True, "human_reviewed": True
+            })
+            self.assertEqual(export.status_code, 200)
+            self.assertEqual(export.json()["state"], "ready_for_manual_upload")
             downloaded = self.client.get("/api/v1/media/" + data["id"], headers=self.headers)
             self.assertEqual(downloaded.content, b"\x89PNG\r\n\x1a\nprivate-test-image-bytes")
             deleted = self.client.delete("/api/v1/media/" + data["id"], headers=self.headers)
