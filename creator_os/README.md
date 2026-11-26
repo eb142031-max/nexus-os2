@@ -1,59 +1,36 @@
 # Dark Leyla Creator OS — standalone MVP
 
-Dark Leyla Creator OS is a standalone FastAPI application with a private creator dashboard, API-key authentication, encrypted provider credential storage, avatar registry, generation-draft queue, manual export center and activity records.
+Dark Leyla Creator OS is a standalone FastAPI application with a creator dashboard, API-key authentication, encrypted provider credential storage, avatar registry, generation-draft queue, encrypted private media vault, manual export center and audit history.
 
-## Current implementation
-
-- Server-side API keys, created once through a bootstrap-only endpoint and stored as SHA-256 hashes.
-- Provider credentials encrypted at rest using AES-256-GCM; the master key is supplied only through server environment configuration.
+## Working capabilities
+- Server-side API keys created through a bootstrap-only endpoint and stored as SHA-256 hashes.
+- Provider credentials encrypted at rest using AES-256-GCM.
+- Private media upload, list, download and delete endpoints. Files are encrypted before writing to a private persistent volume; there is no public media URL. Supported formats: JPEG, PNG, WebP, GIF, MP4 and WebM, up to 100 MB per file.
 - Avatar registry with adult-status, rights and likeness attestations.
-- CelebMaker connection check (/me, /credits, /generation-options) using its documented server-side bearer-key API.
-- Generation draft queue. No provider generation request is submitted and no credits are spent.
-- Scheduled automation rules with pause/resume controls and a separate worker that enqueues generation drafts on a schedule; the worker never calls providers.
-- Manual export records. No Fanvue publishing or automated upload is performed.
-- Fanvue, OurDream and JOI connector status disclosures.
-- API audit event history.
+- CelebMaker credential storage and live connection/options checks. No paid generation call is made.
+- Generation draft queue and scheduled automation rules. Worker enqueues drafts only and never calls providers.
+- Manual export records; Fanvue publishing remains manual.
+- Fanvue OAuth 2.0 with PKCE account connection.
+- Audit event history.
 - SQLite for local evaluation; PostgreSQL supported through DATABASE_URL.
 - Docker packaging.
 
-## Provider status
+## Private media storage requirement
+Set DARKLEYLA_MEDIA_DIR to a persistent private volume. Never expose this directory as a static/public web directory. Back up the encrypted media volume and database together. Losing DARKLEYLA_MASTER_KEY makes stored credentials and media unrecoverable.
 
-- **CelebMaker:** credential storage and live connection/options checks are implemented. Paid generation is deliberately locked until the app has verified per-mode cost controls and explicit per-job spend approval. API-generated media has a documented 30-day retention period; a future media-ingestion worker must archive approved files promptly.
-- **Fanvue:** server-side OAuth 2.0 with PKCE account connection is implemented. Register an app in the Fanvue Developer Area, configure client ID, client secret, exact callback URI and allowed scopes, then connect from the dashboard. Tokens are encrypted at rest. Publishing remains manual; this MVP does not create posts or upload media through Fanvue.
-- **OurDream:** disabled. Its terms prohibit scraping/reverse-engineering and automated access outside an officially provided API, and restrict use to personal/non-commercial purposes. Re-enable only after written commercial permission and official API documentation.
-- **JOI:** disabled pending identification of the exact service, official API documentation and commercial-use rights. No browser automation, scraping or terms circumvention.
+## Provider status
+- **CelebMaker:** credential storage and connection/options checks are implemented. Paid generation remains locked pending verified per-mode cost controls and explicit per-job spend approval.
+- **Fanvue:** OAuth account connection is implemented; publishing remains manual and no automated upload/post is performed.
+- **OurDream:** disabled pending official API and commercial-use permission.
+- **JOI:** disabled pending exact service identification, official API documentation and commercial-use rights.
 
 ## Local run
-
 1. Change into the creator_os directory.
-2. Create a Python 3.12 virtual environment and activate it.
-3. Install dependencies with pip install -r requirements.txt.
+2. Create a Python 3.12 virtual environment.
+3. Install with pip install -r requirements.txt.
 4. Copy .env.example to .env and replace both placeholder secrets with generated random values.
-5. Load the environment and run uvicorn app:app --reload.
-6. Open http://127.0.0.1:8000. API documentation is at /docs. In a second terminal, start the scheduler with python worker.py. The worker requires the same DATABASE_URL and environment secrets as the API.
+5. Run uvicorn app:app --reload and open http://127.0.0.1:8000.
+6. In a second terminal, run python worker.py with the same environment and database settings.
 
-Generate an API key using the dashboard first-run form or the bootstrap endpoint:
-POST /api/v1/admin/api-keys with Authorization: Bearer YOUR_BOOTSTRAP_TOKEN and JSON body {"name":"Primary Creator Key"}.
-
-The raw key is shown once. Use it as X-DarkLeyla-Key on protected endpoints.
-
-## Docker
-
-Build from this directory with docker build -t dark-leyla-creator-os .
-Run with docker run --env-file .env -p 8000:8000 -v darkleyla-data:/app/data dark-leyla-creator-os.
-For persistent Docker SQLite, set DATABASE_URL to sqlite:////app/data/darkleyla_creator.db.
-
-## Production deployment gate
-
-Before public production use:
-1. Configure managed PostgreSQL, private media object storage and encrypted backups.
-2. Put secrets in the host's secret manager; never commit .env.
-3. Terminate TLS at a trusted reverse proxy and restrict the admin bootstrap endpoint.
-4. Add rate limiting, key revocation UI, account recovery and audit integrity anchoring.
-5. Complete external security review and browser/accessibility tests.
-6. Register the Fanvue OAuth application and confirm scopes and current API version.
-7. Verify provider credit estimates and obtain explicit per-job spend approval before enabling generation.
-8. Implement signed webhook verification from provider-specific documentation before accepting callbacks.
-9. Test backup/restore, retention and deletion procedures.
-
-This is a deployable MVP package, not yet a production-hardened public SaaS. It intentionally fails closed on paid generation and does not automate publishing.
+## Production gate
+Before public use, configure PostgreSQL, a private persistent media volume, encrypted backups, TLS, rate limiting, bootstrap-token rotation, OAuth callback hardening, account recovery, audit integrity anchoring and an external security review. This is a deployable MVP, not a production-hardened public SaaS. Paid generation and automated publishing remain disabled.
