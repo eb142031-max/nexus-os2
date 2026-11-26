@@ -107,7 +107,7 @@ class CreatorOsTests(unittest.TestCase):
             uploaded = self.client.post(
                 "/api/v1/media", params={"avatar_id": avatar["id"]},
                 headers={**self.headers, "X-File-Name": "portrait.png", "X-Media-Type": "image/png"},
-                content=b"private-test-image-bytes"
+                content=b"\x89PNG\r\n\x1a\nprivate-test-image-bytes"
             )
             self.assertEqual(uploaded.status_code, 200)
             data = uploaded.json()
@@ -116,7 +116,7 @@ class CreatorOsTests(unittest.TestCase):
             stored = next(Path(temp_dir).glob("*.enc")).read_bytes()
             self.assertNotIn(b"private-test-image-bytes", stored)
             downloaded = self.client.get("/api/v1/media/" + data["id"], headers=self.headers)
-            self.assertEqual(downloaded.content, b"private-test-image-bytes")
+            self.assertEqual(downloaded.content, b"\x89PNG\r\n\x1a\nprivate-test-image-bytes")
             deleted = self.client.delete("/api/v1/media/" + data["id"], headers=self.headers)
             self.assertTrue(deleted.json()["deleted"])
             self.assertEqual(self.client.get("/api/v1/media/" + data["id"], headers=self.headers).status_code, 404)
