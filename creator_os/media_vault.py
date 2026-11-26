@@ -9,7 +9,7 @@ import hashlib
 import os
 import secrets
 from pathlib import Path
-from urllib.parse import unquote
+from urllib.parse import quote, unquote
 
 from fastapi import APIRouter, Depends, Header, HTTPException, Request
 from fastapi.responses import Response
@@ -145,9 +145,10 @@ def download_private_media(asset_id: str, db: Session = Depends(db_session), key
         raise HTTPException(500, "Media integrity or encryption-key verification failed.") from exc
     if hashlib.sha256(raw).hexdigest() != row.sha256:
         raise HTTPException(500, "Media integrity check failed.")
-    safe_name = row.file_name.replace('"', "")
+    safe_name = row.file_name.replace('"', "").encode("ascii", "ignore").decode("ascii") or "private-media"
+    encoded_name = quote(row.file_name, safe="")
     return Response(content=raw, media_type=row.media_type, headers={
-        "Content-Disposition": f'attachment; filename="{safe_name}"',
+        "Content-Disposition": f'attachment; filename="{safe_name}"; filename*=UTF-8\'\'{encoded_name}',
         "Cache-Control": "private, no-store", "X-Content-Type-Options": "nosniff",
     })
 
