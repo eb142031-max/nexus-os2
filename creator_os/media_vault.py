@@ -74,11 +74,19 @@ async def upload_private_media(
         raise HTTPException(404, "Avatar not found.")
     if x_media_type.lower() not in ALLOWED_MEDIA_TYPES:
         raise HTTPException(415, "Unsupported media type. Upload JPEG, PNG, WebP, GIF, MP4 or WebM.")
-    raw = await request.body()
+    declared_length = request.headers.get("content-length")
+    if declared_length and declared_length.isdigit() and int(declared_length) > MAX_MEDIA_BYTES:
+        raise HTTPException(413, "Media exceeds the 100 MB upload limit.")
+    chunks = []
+    total = 0
+    async for chunk in request.stream():
+        total += len(chunk)
+        if total > MAX_MEDIA_BYTES:
+            raise HTTPException(413, "Media exceeds the 100 MB upload limit.")
+        chunks.append(chunk)
+    raw = b"".join(chunks)
     if not raw:
         raise HTTPException(400, "Empty media upload.")
-    if len(raw) > MAX_MEDIA_BYTES:
-        raise HTTPException(413, "Media exceeds the 100 MB upload limit.")
     if not _matches_media_type(raw, x_media_type.lower()):
         raise HTTPException(415, "File signature does not match the declared media type.")
     name = Path(unquote(x_file_name).replace(chr(92), "/")).name.strip()
