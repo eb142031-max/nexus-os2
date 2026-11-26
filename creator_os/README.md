@@ -5,7 +5,7 @@ Dark Leyla Creator OS is a standalone FastAPI application with a creator dashboa
 ## Working capabilities
 - Server-side API keys created through a bootstrap-only endpoint and stored as SHA-256 hashes.
 - Provider credentials encrypted at rest using AES-256-GCM.
-- Private media upload, list, download and delete endpoints. Files are encrypted before writing to a private persistent volume; there is no public media URL. Supported formats: JPEG, PNG, WebP, GIF, MP4 and WebM, up to 100 MB per file.
+- Private media upload, list, download and delete endpoints. Files are encrypted before writing to a private persistent volume; there is no public media URL. Supported formats: JPEG, PNG, WebP, GIF, MP4 and WebM, up to 100 MB per file. The dashboard can select a vaulted asset as the source for a manual export record.
 - Avatar registry with adult-status, rights and likeness attestations.
 - CelebMaker credential storage and live connection/options checks. No paid generation call is made.
 - Generation draft queue and scheduled automation rules. Worker enqueues drafts only and never calls providers.
