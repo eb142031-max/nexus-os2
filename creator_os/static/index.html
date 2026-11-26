@@ -35,6 +35,7 @@ pre{white-space:pre-wrap;overflow-wrap:anywhere;color:#d9c9f8;background:#100d18
 <script>
 let apiKey=sessionStorage.getItem("darkleyla_api_key")||"";
 const $=id=>document.getElementById(id);
+function esc(v){return String(v??"").replace(/[&<>]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;"}[c])).replace(/"/g,"&quot;").replace(/'/g,"&#39;")}
 function headers(){return {"Content-Type":"application/json","X-DarkLeyla-Key":apiKey}}
 async function api(path,opts={}){const r=await fetch(path,{...opts,headers:{...headers(),...(opts.headers||{})}});const d=await r.json().catch(()=>({detail:r.statusText}));if(!r.ok)throw new Error(d.detail||"Request failed");return d}
 function msg(s){$("authMsg").textContent=s}
@@ -47,11 +48,11 @@ async function checkCeleb(){try{const d=await api("/api/v1/integrations/celebmak
 async function createJob(){try{const d=await api("/api/v1/jobs",{method:"POST",body:JSON.stringify({avatar_id:$("jobAvatar").value,prompt:$("jobPrompt").value,mode:$("jobMode").value,aspect_ratio:$("jobRatio").value})});msg("Draft saved: "+d.id);await refreshAll()}catch(e){msg(e.message)}}
 async function createExport(){try{const d=await api("/api/v1/exports",{method:"POST",body:JSON.stringify({avatar_id:$("exportAvatar").value,job_id:$("exportJob").value||null,asset_url:$("assetUrl").value,ai_disclosure:$("aiDisclosure").checked,human_reviewed:$("humanReviewed").checked})});msg("Export record created: "+d.id+" · "+d.state);await refreshAll()}catch(e){msg(e.message)}}
 function render(id,items,fn){$(id).innerHTML=items.length?items.map(fn).join(""):"<div class='tiny'>No records yet.</div>"}
-async function loadProviders(){const d=await api("/api/v1/integrations");render("providers",d,p=>"<div class='item'><b>"+p.provider+"</b> · "+(p.configured?"configured":"not connected")+"<div class='tiny'>"+p.capability+"</div></div>")}
-async function loadAvatars(){const d=await api("/api/v1/avatars");render("avatars",d,a=>"<div class='item'><b>"+a.name+"</b><div class='tiny'>"+a.kind+" · "+a.id+"</div></div>");["jobAvatar","exportAvatar"].forEach(id=>$(id).innerHTML=d.map(a=>"<option value='"+a.id+"'>"+a.name+"</option>").join(""))}
-async function loadJobs(){const d=await api("/api/v1/jobs");render("jobs",d,j=>"<div class='item'><b>"+j.state+"</b><div class='tiny'>"+j.id+" · "+j.mode+" · "+j.aspect_ratio+"</div><div>"+j.prompt+"</div></div>")}
-async function loadExports(){const d=await api("/api/v1/exports");render("exports",d,x=>"<div class='item'><b>"+x.state+"</b><div class='tiny'>"+x.id+" · AI disclosure "+(x.ai_disclosure?"yes":"no")+" · human review "+(x.human_reviewed?"yes":"no")+"</div><div>"+x.asset_url+"</div></div>")}
-async function loadAudit(){const d=await api("/api/v1/audit");render("audit",d,x=>"<div class='item'><b>"+x.event+"</b><div class='tiny'>"+x.object_type+" "+(x.object_id||"")+" · "+x.created_at+"</div></div>")}
+async function loadProviders(){const d=await api("/api/v1/integrations");render("providers",d,p=>"<div class='item'><b>"+esc(p.provider)+"</b> · "+(p.configured?"configured":"not connected")+"<div class='tiny'>"+esc(p.capability)+"</div></div>")}
+async function loadAvatars(){const d=await api("/api/v1/avatars");render("avatars",d,a=>"<div class='item'><b>"+esc(a.name)+"</b><div class='tiny'>"+esc(a.kind)+" · "+esc(a.id)+"</div></div>");["jobAvatar","exportAvatar"].forEach(id=>$(id).innerHTML=d.map(a=>"<option value='"+esc(a.id)+"'>"+esc(a.name)+"</option>").join(""))}
+async function loadJobs(){const d=await api("/api/v1/jobs");render("jobs",d,j=>"<div class='item'><b>"+esc(j.state)+"</b><div class='tiny'>"+esc(j.id)+" · "+esc(j.mode)+" · "+esc(j.aspect_ratio)+"</div><div>"+esc(j.prompt)+"</div></div>")}
+async function loadExports(){const d=await api("/api/v1/exports");render("exports",d,x=>"<div class='item'><b>"+esc(x.state)+"</b><div class='tiny'>"+esc(x.id)+" · AI disclosure "+(x.ai_disclosure?"yes":"no")+" · human review "+(x.human_reviewed?"yes":"no")+"</div><div>"+esc(x.asset_url)+"</div></div>")}
+async function loadAudit(){const d=await api("/api/v1/audit");render("audit",d,x=>"<div class='item'><b>"+esc(x.event)+"</b><div class='tiny'>"+esc(x.object_type)+" "+(esc(x.object_id||'')||"")+" · "+esc(x.created_at)+"</div></div>")}
 async function refreshAll(){if(!apiKey)return;try{await Promise.all([loadProviders(),loadAvatars(),loadJobs(),loadExports(),loadAudit()])}catch(e){msg(e.message)}}
 if(apiKey){$("apiKey").value=apiKey;connect()}
 </script></body></html>
