@@ -7,3 +7,6 @@ __pycache__/
 .venv/
 .git/
 tests/
+private_media/
+*.enc
+*.tmp
