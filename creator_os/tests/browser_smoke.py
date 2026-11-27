@@ -93,7 +93,7 @@ class CreatorOsBrowserSmoke(unittest.TestCase):
                     page.locator("#mediaFile").set_input_files({
                         "name": "browser-test.png",
                         "mimeType": "image/png",
-                        "buffer": b"\\x89PNG\\r\\n\\x1a\\nprivate-browser-test",
+                        "buffer": b"\x89PNG\r\n\x1a\nprivate-browser-test",
                     })
                     page.get_by_role("button", name="Encrypt and store privately").click()
                     page.locator("#media").get_by_text("browser-test.png").wait_for()
