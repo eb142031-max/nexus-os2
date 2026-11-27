@@ -143,7 +143,7 @@ class CreatorOsTests(unittest.TestCase):
             uploaded = self.client.post(
                 "/api/v1/media", params={"avatar_id": avatar["id"]},
                 headers={**self.headers, "X-File-Name": "private.png", "X-Media-Type": "image/png"},
-                content=b"\\x89PNG\\r\\n\\x1a\\nprivate-test-image-bytes"
+                content=b"\x89PNG\r\n\x1a\nprivate-test-image-bytes"
             )
             self.assertEqual(uploaded.status_code, 200)
             other_key = self.client.post("/api/v1/admin/api-keys",
