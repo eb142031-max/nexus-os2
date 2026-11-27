@@ -38,3 +38,15 @@ jobs:
       - name: Run real-browser workflow smoke test
         working-directory: creator_os
         run: python tests/browser_smoke.py -v
+      - name: Validate Compose configuration and build containers
+        working-directory: creator_os
+        run: |
+          set -eu
+          trap 'rm -f .env' EXIT
+          cat > .env <<'EOF'
+          DARKLEYLA_BOOTSTRAP_TOKEN=ci-placeholder-bootstrap-token
+          DARKLEYLA_MASTER_KEY=eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHg=
+          POSTGRES_PASSWORD=ci-placeholder-postgres-password
+          EOF
+          docker compose -f compose.yaml config --quiet
+          docker compose -f compose.yaml build api worker
