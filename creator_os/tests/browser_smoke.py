@@ -61,6 +61,14 @@ class CreatorOsBrowserSmoke(unittest.TestCase):
                         "(els) => els.map(e => e.id).filter((id, i, all) => all.indexOf(id) !== i)"
                     )
                     self.assertEqual([], duplicate_ids)
+                    for link in page.locator("nav a").all():
+                        href = link.get_attribute("href")
+                        link.click()
+                        self.assertEqual(href, page.evaluate("() => window.location.hash"))
+                    for link in page.locator(".dollhouse a").all():
+                        href = link.get_attribute("href")
+                        link.click()
+                        self.assertEqual(href, page.evaluate("() => window.location.hash"))
 
                     # Bootstrap an owner key using the real API and UI.
                     page.locator("#bootstrap").fill("browser-test-bootstrap")
