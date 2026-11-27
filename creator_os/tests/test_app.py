@@ -128,6 +128,35 @@ class CreatorOsTests(unittest.TestCase):
             self.assertEqual(self.client.get("/api/v1/media/" + data["id"], headers=self.headers).status_code, 404)
             media_vault.MEDIA_DIR = old_dir
 
+
+    def test_private_media_is_scoped_to_the_uploading_api_key(self):
+        import tempfile
+        from pathlib import Path
+        import media_vault
+        old_dir = media_vault.MEDIA_DIR
+        with tempfile.TemporaryDirectory() as temp_dir:
+            media_vault.MEDIA_DIR = Path(temp_dir)
+            avatar = self.client.post("/api/v1/avatars", headers=self.headers, json={
+                "name": "Scoped Media Adult", "kind": "fictional", "adult_attested": True,
+                "rights_attested": True, "likeness_authorized": False
+            }).json()
+            uploaded = self.client.post(
+                "/api/v1/media", params={"avatar_id": avatar["id"]},
+                headers={**self.headers, "X-File-Name": "private.png", "X-Media-Type": "image/png"},
+                content=b"\\x89PNG\\r\\n\\x1a\\nprivate-test-image-bytes"
+            )
+            self.assertEqual(uploaded.status_code, 200)
+            other_key = self.client.post("/api/v1/admin/api-keys",
+                headers={"Authorization": "Bearer test-bootstrap-token"},
+                json={"name": "separate-key"}).json()["api_key"]
+            other_headers = {"X-DarkLeyla-Key": other_key}
+            self.assertEqual(self.client.get("/api/v1/media", headers=other_headers).json(), [])
+            self.assertEqual(self.client.get("/api/v1/media/" + uploaded.json()["id"],
+                headers=other_headers).status_code, 404)
+            self.assertEqual(self.client.delete("/api/v1/media/" + uploaded.json()["id"],
+                headers=other_headers).status_code, 404)
+            media_vault.MEDIA_DIR = old_dir
+
     def test_private_media_rejects_unsupported_type(self):
         avatar = self.client.post("/api/v1/avatars", headers=self.headers, json={
             "name": "Media Type Test", "kind": "fictional", "adult_attested": True,
