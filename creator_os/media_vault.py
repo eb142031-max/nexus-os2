@@ -128,7 +128,7 @@ async def upload_private_media(
 
 @router.get("")
 def list_private_media(db: Session = Depends(db_session), key: ApiKey = Depends(get_api_key)):
-    rows = db.query(MediaAsset).order_by(MediaAsset.created_at.desc()).limit(200).all()
+    rows = db.query(MediaAsset).filter_by(owner_key_id=key.id).order_by(MediaAsset.created_at.desc()).limit(200).all()
     return [{
         "id": r.id, "avatar_id": r.avatar_id, "file_name": r.file_name,
         "media_type": r.media_type, "size_bytes": r.size_bytes,
@@ -138,7 +138,7 @@ def list_private_media(db: Session = Depends(db_session), key: ApiKey = Depends(
 
 @router.get("/{asset_id}")
 def download_private_media(asset_id: str, db: Session = Depends(db_session), key: ApiKey = Depends(get_api_key)):
-    row = db.query(MediaAsset).filter_by(id=asset_id).first()
+    row = db.query(MediaAsset).filter_by(id=asset_id, owner_key_id=key.id).first()
     if not row:
         raise HTTPException(404, "Media asset not found.")
     path = _asset_path(row.id)
