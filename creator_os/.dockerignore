@@ -1,0 +1,12 @@
+.env
+.env.*
+*.db
+*.sqlite
+*.sqlite3
+__pycache__/
+.venv/
+.git/
+tests/
+private_media/
+*.enc
+*.tmp

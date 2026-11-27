@@ -1,0 +1,95 @@
+name: Dark Leyla Creator OS CI
+on:
+  pull_request:
+    paths:
+      - "creator_os/**"
+      - ".github/workflows/creator-os-ci.yml"
+  push:
+    branches:
+      - "feat/dark-leyla-creator-os-mvp"
+    paths:
+      - "creator_os/**"
+      - ".github/workflows/creator-os-ci.yml"
+permissions:
+  contents: read
+jobs:
+  test:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        with:
+          persist-credentials: false
+      - uses: actions/setup-python@a26af69be951a213d495a4c3e4e4022e16d87065
+        with:
+          python-version: "3.12"
+      - name: Install dependencies
+        run: pip install -r creator_os/requirements.txt
+      - name: Run Creator OS tests
+        working-directory: creator_os
+        env:
+          DARKLEYLA_BOOTSTRAP_TOKEN: test-bootstrap-token
+          DARKLEYLA_MASTER_KEY: eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHg=
+          DATABASE_URL: sqlite:///./ci_test.db
+        run: python -m unittest discover -s tests -v
+      - name: Install browser test runtime
+        run: |
+          pip install playwright==1.52.0
+          python -m playwright install --with-deps chromium
+      - name: Run real-browser workflow smoke test
+        working-directory: creator_os
+        run: python tests/browser_smoke.py -v
+      - name: Validate Compose configuration and build containers
+        working-directory: creator_os
+        run: |
+          set -eu
+          trap 'rm -f .env' EXIT
+          cat > .env <<'EOF'
+          DARKLEYLA_BOOTSTRAP_TOKEN=ci-placeholder-bootstrap-token
+          DARKLEYLA_MASTER_KEY=eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHg=
+          POSTGRES_PASSWORD=ci-placeholder-postgres-password
+          EOF
+          docker compose -f compose.yaml config --quiet
+          docker compose -f compose.yaml build api worker
+      - name: Verify Compose runtime and persistent database/media
+        working-directory: creator_os
+        run: |
+          set -eu
+          cat > .env <<'EOF'
+          DARKLEYLA_BOOTSTRAP_TOKEN=ci-placeholder-bootstrap-token
+          DARKLEYLA_MASTER_KEY=eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHg=
+          POSTGRES_PASSWORD=ci-placeholder-postgres-password
+          EOF
+          cleanup() {
+            docker compose -f compose.yaml down -v --remove-orphans || true
+            rm -f .env sample.png downloaded.png
+          }
+          trap cleanup EXIT
+          docker compose -f compose.yaml up -d
+          for attempt in $(seq 1 60); do
+            if curl --fail --silent http://127.0.0.1:8000/health >/dev/null; then
+              break
+            fi
+            sleep 2
+          done
+          curl --fail --silent http://127.0.0.1:8000/health >/dev/null
+          API_KEY=$(curl --fail --silent -X POST http://127.0.0.1:8000/api/v1/admin/api-keys \
+            -H 'Authorization: Bearer ci-placeholder-bootstrap-token' \
+            -H 'Content-Type: application/json' \
+            -d '{"name":"Compose persistence test"}' | python -c 'import json,sys; print(json.load(sys.stdin)["api_key"])')
+          AVATAR_ID=$(curl --fail --silent -X POST http://127.0.0.1:8000/api/v1/avatars \
+            -H "X-DarkLeyla-Key: $API_KEY" -H 'Content-Type: application/json' \
+            -d '{"name":"Compose Persistence Fictional Adult","kind":"fictional","description":"CI-only synthetic persona","adult_attested":true,"rights_attested":true}' | python -c 'import json,sys; print(json.load(sys.stdin)["id"])')
+          printf '%s' 'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAwMCAO+jZ8sAAAAASUVORK5CYII=' | base64 -d > sample.png
+          MEDIA_ID=$(curl --fail --silent -X POST "http://127.0.0.1:8000/api/v1/media?avatar_id=$AVATAR_ID" \
+            -H "X-DarkLeyla-Key: $API_KEY" -H 'X-File-Name: persistence.png' -H 'X-Media-Type: image/png' \
+            --data-binary @sample.png | python -c 'import json,sys; print(json.load(sys.stdin)["id"])')
+          docker compose -f compose.yaml restart api
+          for attempt in $(seq 1 30); do
+            if curl --fail --silent http://127.0.0.1:8000/health >/dev/null; then
+              break
+            fi
+            sleep 2
+          done
+          curl --fail --silent -H "X-DarkLeyla-Key: $API_KEY" http://127.0.0.1:8000/api/v1/avatars | grep -q "$AVATAR_ID"
+          curl --fail --silent -H "X-DarkLeyla-Key: $API_KEY" "http://127.0.0.1:8000/api/v1/media/$MEDIA_ID" -o downloaded.png
+          cmp sample.png downloaded.png
