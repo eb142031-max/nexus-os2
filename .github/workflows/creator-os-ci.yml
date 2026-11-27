@@ -37,4 +37,4 @@ jobs:
           python -m playwright install --with-deps chromium
       - name: Run real-browser workflow smoke test
         working-directory: creator_os
-        run: python -m unittest tests.browser_smoke -v
+        run: python tests/browser_smoke.py -v
